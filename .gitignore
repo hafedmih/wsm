@@ -1,0 +1,27 @@
+# Environment and Config
+.env
+# Note: In CI3, usually you rename config/database.php to database.php.example
+# and ignore the actual database.php file.
+
+# Composer
+/vendor/
+
+# User Uploads/Assets
+assets/uploads/
+/uploads/users/
+/uploads/users/*
+/uploads/project_documents/
+/uploads/project_documents/*
+application/cache/*
+!application/cache/index.html
+!application/cache/.htaccess
+
+application/logs/*
+!application/logs/index.html
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+/nbproject/private/

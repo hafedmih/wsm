@@ -1,0 +1,148 @@
+<?php
+error_reporting(-1);
+		ini_set('display_errors', 1);
+$controller = "";
+if($user_type == 'parent'){
+  $controller = 'parents';
+} else{
+  $controller = $user_type;
+}
+?>
+
+<!-- ========== Left Sidebar Start ========== -->
+<div class="leftside-menu leftside-menu-detached">
+
+  <div class="leftbar-user">
+    <a href="javascript: void(0);">
+      <img src="<?php echo $this->user_model->get_user_image($this->session->userdata('user_id')); ?>" alt="user-image" height="42" class="rounded-circle shadow-sm">
+      <?php
+      $user_details = $this->user_model->get_user_details($this->session->userdata('user_id'));
+      ?>
+      <span class="leftbar-user-name"><?php echo $user_details['name']; ?></span>
+    </a>
+  </div>
+  <!--- Sidemenu -->
+  <ul class="side-nav">
+    <li class="side-nav-title side-nav-item py-2"><?php echo get_phrase('navigation'); ?></li>
+    <li class="side-nav-item">
+      <a href="<?php echo site_url($controller.'/dashboard'); ?>" class="side-nav-link py-2">
+        <i class="dripicons-meter"></i>
+        <span> <?php echo get_phrase('dashboard'); ?> </span>
+      </a>
+    </li>
+
+    <?php
+    $this->db->order_by('sort_order', 'asc');
+    $main_menus = $this->db->get_where('menus', array('parent' => 0, 'status' => 1, $this->session->userdata('user_type').'_access' => 1))->result_array();
+    foreach($main_menus as $main_menu){
+      ?><li class="side-nav-item"><?php
+      $this->db->order_by('sort_order', 'asc');
+      $check_menus = $this->db->get_where('menus', array('parent' => $main_menu['id'], 'status' => 1, $this->session->userdata('user_type').'_access' => 1));
+      if($check_menus->num_rows() > 0){ ?>
+        <a data-bs-toggle="collapse" href="#<?php echo $main_menu['unique_identifier']; ?>" aria-expanded="false" aria-controls="<?php echo $main_menu['unique_identifier']; ?>" class="side-nav-link py-2">
+          <i class="<?php echo $main_menu['icon']; ?>"></i>
+          <span><?php echo get_phrase($main_menu['displayed_name']); ?></span>
+          <span class="menu-arrow"></span>
+        </a>
+        <div class="collapse" id="<?php echo $main_menu['unique_identifier']; ?>">
+          <ul class="side-nav-second-level">
+            <?php $this->db->order_by('sort_order', 'asc'); ?>
+            <?php $menus = $this->db->get_where('menus', array('parent' => $main_menu['id'], 'status' => 1, $this->session->userdata('user_type').'_access' => 1))->result_array();
+            foreach ($menus as $menu) {
+              $this->db->order_by('sort_order', 'asc');
+              $check_sub_menus = $this->db->get_where('menus', array('parent' => $menu['id'], 'status' => 1, $this->session->userdata('user_type').'_access' => 1));
+              if($check_sub_menus->num_rows() > 0){ ?>
+                <li class="side-nav-item">
+                  <a data-bs-toggle="collapse" href="#<?php echo $menu['unique_identifier']; ?>" aria-expanded="false" aria-controls="<?php echo $menu['unique_identifier']; ?>"><?php echo get_phrase($menu['displayed_name']); ?>
+                    <span class="menu-arrow"></span>
+                  </a>
+                  <div class="collapse" id="<?php echo $menu['unique_identifier']; ?>">
+                    <ul class="side-nav-third-level">
+                      <?php
+                      $this->db->order_by('sort_order', 'asc');
+                      $sub_menus = $this->db->get_where('menus', array('parent' => $menu['id'], $this->session->userdata('user_type').'_access' => 1))->result_array();
+                      foreach ($sub_menus as $sub_menu) {
+                        ?>
+                        <li>
+                          <?php
+                            if ($menu['is_addon']) {
+                              $route = 'addons/'.$sub_menu['route_name'];
+                            }else{
+                              $route = $controller.'/'.$sub_menu['route_name'];
+                            }
+                           ?>
+                          <a href="<?php echo site_url($route); ?>"><?php echo get_phrase($sub_menu['displayed_name']); ?></a>
+                        </li>
+                      <?php } ?>
+                    </ul>
+                  </div>
+                </li>
+              <?php }else{ ?>
+                <li>
+                  <?php
+                    if ($menu['is_addon']) {
+                      $route = 'addons/'.$menu['route_name'];
+                    }else{
+                      $route = $controller.'/'.$menu['route_name'];
+                    }
+                   ?>
+                  <a href="<?php echo site_url($route); ?>"><?php echo get_phrase($menu['displayed_name']); ?></a>
+                </li>
+              <?php } ?>
+            <?php } ?>
+          </ul>
+        </div>
+
+        <?php
+          }else{
+            if ($main_menu['is_addon']) {
+              $route = 'addons/'.$main_menu['route_name'];
+            }else{
+              if($main_menu['unique_identifier'] == 'online_courses'){
+                $route = 'addons/'.$main_menu['route_name'];
+              }else{
+                $route = $controller.'/'.$main_menu['route_name'];
+              }
+            }
+           ?>
+    <a href="<?php echo site_url($route); ?>" class="side-nav-link py-2 d-flex align-items-center justify-content-between">
+    <div>
+        <i class="<?php echo $main_menu['icon']; ?>"></i>
+        <span><?php echo get_phrase($main_menu['displayed_name']); ?></span>
+    </div>
+
+    <!-- PENDING ADMISSION BADGE (Red) -->
+    <?php if($main_menu['unique_identifier'] == 'online_admission'): ?>
+        <?php $pending_count = $this->db->where('status', 0)->where_in('role', array('donor', 'admin'))->count_all_results('users'); ?>
+        <?php if($pending_count > 0): ?>
+            <span id="pending-registration-badge" class="badge bg-danger"><?php echo $pending_count; ?></span>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <!-- MY PROJECTS BADGE (Green) -->
+    <?php if($main_menu['unique_identifier'] == 'my_projects'): ?>
+        <?php 
+            $donor_id = $this->session->userdata('school_id');
+            $this->db->distinct();
+            $this->db->select('project_id');
+            $this->db->where('donor_id', $donor_id);
+            $my_projects_count = $this->db->count_all_results('project_funding');
+            
+            if($my_projects_count > 0): 
+        ?>
+            <span class="badge bg-success"><?php echo $my_projects_count; ?></span>
+        <?php endif; ?>
+    <?php endif; ?>
+</a>
+        </li>
+      <?php }
+    }
+    ?>
+  </ul>
+  <!-- End Sidebar -->
+
+  <div class="clearfix"></div>
+  <!-- Sidebar -left -->
+
+</div>
+<!-- Left Sidebar End -->

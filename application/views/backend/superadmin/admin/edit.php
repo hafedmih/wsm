@@ -1,0 +1,46 @@
+<?php
+$users = $this->db->get_where('users', array('id' => $param1))->result_array();
+foreach($users as $user): ?>
+<form method="POST" class="d-block ajaxForm" action="<?php echo route('admin/update/'.$param1); ?>">
+  <div class="form-row">
+    <div class="form-group mb-1">
+      <label for="name"><?php echo get_phrase('name'); ?></label>
+      <input type="text" value="<?php echo $user['name']; ?>" class="form-control" id="name" name = "name" required>
+      <small id="" class="form-text text-muted"><?php echo get_phrase('provide_admin_name'); ?></small>
+    </div>
+
+    <div class="form-group mb-1">
+      <label for="email"><?php echo get_phrase('email'); ?></label>
+      <input type="email" value="<?php echo $user['email']; ?>" class="form-control" id="email" name = "email" required>
+      <small id="" class="form-text text-muted"><?php echo get_phrase('provide_admin_email'); ?></small>
+    </div>
+
+
+    <div class="form-group mb-1">
+      <label for="phone"><?php echo get_phrase('phone_number'); ?></label>
+      <input type="text" value="<?php echo $user['phone']; ?>" class="form-control" id="phone" name = "phone" required>
+      <small id="" class="form-text text-muted"><?php echo get_phrase('provide_admin_phone_number'); ?></small>
+    </div>
+
+    
+    
+    
+    
+    <div class="form-group mt-2 col-md-12">
+      <button class="btn btn-block btn-primary" type="submit"><?php echo get_phrase('update_admin'); ?></button>
+    </div>
+  </div>
+</form>
+<?php endforeach; ?>
+
+<script>
+
+  $(document).ready(function () {
+    $('select.select2:not(.normal)').each(function () { $(this).select2({ dropdownParent: '#right-modal' }); });
+  });
+  $(".ajaxForm").validate({}); // Jquery form validation initialization
+  $(".ajaxForm").submit(function(e) {
+    var form = $(this);
+    ajaxSubmit(e, form, showAllAdmins);
+  });
+</script>
