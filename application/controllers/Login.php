@@ -1,18 +1,8 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-/*
-*  @author   : Creativeitem
-*  date      : November, 2019
-*  Ekattor School Management System With Addons
-*  http://codecanyon.net/user/Creativeitem
-*  http://support.creativeitem.com
-*/
-
 class Login extends CI_Controller
 {
-
-
 	public function __construct()
 	{
 		parent::__construct();
@@ -20,14 +10,11 @@ class Login extends CI_Controller
 		$this->load->database();
 		$this->load->library('session');
 
-		/*LOADING ALL THE MODELS HERE*/
+		/*LOADING MODELS*/
 		$this->load->model('Crud_model',     'crud_model');
 		$this->load->model('User_model',     'user_model');
 		$this->load->model('Settings_model', 'settings_model');
-		$this->load->model('Payment_model',  'payment_model');
 		$this->load->model('Email_model',    'email_model');
-		$this->load->model('Addon_model',    'addon_model');
-		$this->load->model('Frontend_model', 'frontend_model');
 
 		/*cache control*/
 		$this->output->set_header("Expires: Tue, 01 Jan 2000 00:00:00 GMT");
@@ -36,28 +23,29 @@ class Login extends CI_Controller
 		$this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
 		$this->output->set_header("Pragma: no-cache");
 
-		/*SET DEFAULT TIMEZONE*/
 		timezone();
 	}
 
 	public function index()
 	{
-		if ($this->session->userdata('superadmin_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('admin_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('teacher_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('parent_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('student_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('accountant_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('librarian_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
-		} elseif ($this->session->userdata('driver_login') ==  true) {
-			redirect(route('dashboard'), 'refresh');
+		if ($this->session->userdata('superadmin_login')) {
+			redirect(site_url('superadmin/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('admin_login')) {
+			redirect(site_url('admin/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('storekeeper_login')) {
+			redirect(site_url('storekeeper/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('sitemanager_login')) {
+			redirect(site_url('sitemanager/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('procurement_login')) {
+			redirect(site_url('procurement/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('gm_login')) {
+			redirect(site_url('gm/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('purchasingagent_login')) {
+			redirect(site_url('purchasingagent/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('daf_login')) {
+			redirect(site_url('daf/dashboard'), 'refresh');
+		} elseif ($this->session->userdata('accountant_login')) {
+			redirect(site_url('accountant/dashboard'), 'refresh');
 		} else {
 			$this->load->view('login');
 		}
@@ -69,97 +57,66 @@ class Login extends CI_Controller
 		$password = $this->input->post('password');
 		$credential = array('email' => $email, 'password' => sha1($password));
 
-		// Checking login credential for admin
 		$query = $this->db->get_where('users', $credential);
                 
 		if ($query->num_rows() > 0) {
-                    
-                    
-                    
 			$row = $query->row();
-                         if ($row->status == 0) {
-                            
-            $this->session->set_flashdata('error_message', get_phrase('your_account_is_pending_approval_or_disabled'));
-            redirect(site_url('login'), 'refresh');
-            return; // Stop execution
-        }
+            
+            if ($row->status == 0) {
+                $this->session->set_flashdata('error_message', get_phrase('your_account_is_disabled'));
+                redirect(site_url('login'), 'refresh');
+                return;
+            }
+
+			// Données de session communes
 			$this->session->set_userdata('user_login_type', true);
-                       
+			$this->session->set_userdata('user_id', $row->id);
+			$this->session->set_userdata('user_name', $row->name);
+			$this->session->set_userdata('user_type', $row->role);
+			$this->session->set_userdata('site_id', $row->site_id); 
+// Important pour Nouakchott/Tasiast
+
+			$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
+
+			// Redirection par rôle
 			if ($row->role == 'superadmin') {
 				$this->session->set_userdata('superadmin_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'superadmin');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
 				redirect(site_url('superadmin/dashboard'), 'refresh');
-			} elseif ($row->role == 'admin') {
+			} 
+			elseif ($row->role == 'admin') {
 				$this->session->set_userdata('admin_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'admin');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
 				redirect(site_url('admin/dashboard'), 'refresh');
-			} elseif ($row->role == 'teacher') {
-				$this->session->set_userdata('teacher_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'teacher');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
-				redirect(site_url('teacher/dashboard'), 'refresh');
-			} elseif ($row->role == 'student') {
-				if ($row->status != 1) {
-					$this->session->set_flashdata('error_message', get_phrase('your_account_has_been_disabled'));
-					redirect(site_url('login'), 'refresh');
-				}
-				$this->session->set_userdata('student_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'student');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
-				redirect(site_url('student/dashboard'), 'refresh');
-			} elseif ($row->role == 'donor') {
-//                                var_dump($row->role);
-//                    exit();
-				$this->session->set_userdata('donor_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'donor');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
-				redirect(site_url('donor/dashboard'), 'refresh');
-			
-                                
-                        } elseif ($row->role == 'librarian') {
-				$this->session->set_userdata('librarian_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'librarian');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
-				redirect(site_url('librarian/dashboard'), 'refresh');
-			} elseif ($row->role == 'accountant') {
+			} 
+			elseif ($row->role == 'storekeeper') {
+				$this->session->set_userdata('storekeeper_login', true);
+				redirect(site_url('storekeeper/dashboard'), 'refresh');
+			} 
+			elseif ($row->role == 'sitemanager') {
+				$this->session->set_userdata('sitemanager_login', true);
+				redirect(site_url('sitemanager/dashboard'), 'refresh');
+			} 
+			elseif ($row->role == 'procurement') {
+				$this->session->set_userdata('procurement_login', true);
+				redirect(site_url('procurement/dashboard'), 'refresh');
+			} 
+			elseif ($row->role == 'gm') {
+				$this->session->set_userdata('gm_login', true);
+				redirect(site_url('gm/dashboard'), 'refresh');
+			} 
+			elseif ($row->role == 'purchasingagent') {
+				$this->session->set_userdata('purchasingagent_login', true);
+				redirect(site_url('purchasingagent/dashboard'), 'refresh');
+			} 
+			elseif ($row->role == 'daf') {
+				$this->session->set_userdata('daf_login', true);
+				redirect(site_url('daf/dashboard'), 'refresh');
+			} 
+			elseif ($row->role == 'accountant') {
 				$this->session->set_userdata('accountant_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'accountant');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
 				redirect(site_url('accountant/dashboard'), 'refresh');
-			} elseif ($row->role == 'driver') {
-				$this->session->set_userdata('driver_login', true);
-				$this->session->set_userdata('user_id', $row->id);
-				$this->session->set_userdata('school_id', $row->school_id);
-				$this->session->set_userdata('user_name', $row->name);
-				$this->session->set_userdata('user_type', 'driver');
-				$this->session->set_flashdata('flash_message', get_phrase('welcome_back'));
-				redirect(site_url('driver/dashboard'), 'refresh');
 			}
 		} else {
-                    	$this->session->set_flashdata('error_message', get_phrase('invalid_your_email_or_password'));
+			$this->session->set_flashdata('error_message', get_phrase('invalid_email_or_password'));
 			redirect(site_url('login'), 'refresh');
 		}
 	}
@@ -167,11 +124,9 @@ class Login extends CI_Controller
 	public function logout()
 	{
 		$this->session->sess_destroy();
-		$this->session->set_flashdata('info_message', get_phrase('logged_out'));
 		redirect(site_url('login'), 'refresh');
 	}
 
-	// RETREIVE PASSWORD
 	public function retrieve_password()
 	{
 		$email = $this->input->post('email');
@@ -180,37 +135,27 @@ class Login extends CI_Controller
 			$query = $query->row_array();
 			$new_password = substr(md5(rand(100000000, 20000000000)), 0, 7);
 
-			// updating the database
-			$updater = array(
-				'password' => sha1($new_password)
-			);
+			$updater = array('password' => sha1($new_password));
 			$this->db->where('id', $query['id']);
 			$this->db->update('users', $updater);
 
-			// sending mail to user
 			$this->email_model->password_reset_email($new_password, $query['id']);
 
 			$this->session->set_flashdata('flash_message', get_phrase('please_check_your_mail_inbox'));
 			redirect(site_url('login'), 'refresh');
 		} else {
-			  $this->session->set_flashdata('error_message', get_phrase('invalid_your_email_or_password'));
-        redirect(site_url('login'), 'refresh');
+			$this->session->set_flashdata('error_message', get_phrase('email_not_found'));
+            redirect(site_url('login'), 'refresh');
 		}
 	}
-           public function change_language($language = '')
+
+    public function change_language($language = '')
     {
         if ($language != "") {
-            // 1. Update Database Setting (Global)
             $this->db->where('id', 1);
             $this->db->update('settings', array('language' => $language));
-            
-            // 2. Update Session (Immediate effect for current user)
             $this->session->set_userdata('language', $language);
-            
-            $this->session->set_flashdata('flash_message', get_phrase('language_changed_successfully'));
         }
-        
-        // Redirect back to login
         redirect(site_url('login'), 'refresh');
     }
 }

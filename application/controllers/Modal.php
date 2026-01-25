@@ -39,10 +39,11 @@ class Modal extends CI_Controller {
 		$page_data['param1']		=	$param1;
 		$page_data['param2']		=	$param2;
 		$page_data['param3']		=	$param3;
+                
 		if($folder_name == 'academy'){
 			$this->load->view( 'backend/'.$folder_name.'/'.$page_name.'.php' ,$page_data);
 		}else{
-			$this->load->view( 'backend/'.$this->session->userdata('user_type').'/'.$folder_name.'/'.$page_name.'.php' ,$page_data);
+                   	$this->load->view( 'backend/'.$this->session->userdata('user_type').'/'.$folder_name.'/'.$page_name.'.php' ,$page_data);
 		}		
 	}
 }

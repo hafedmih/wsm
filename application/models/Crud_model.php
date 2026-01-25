@@ -309,5 +309,225 @@ public function get_time_ago($timestamp)
 }
 
 
-	
+	public function asset_create() {
+    $data['asset_code'] = htmlspecialchars($this->input->post('asset_code'));
+    $data['name'] = htmlspecialchars($this->input->post('name'));
+    $data['site_id'] = htmlspecialchars($this->input->post('site_id'));
+    $data['last_calibration'] = htmlspecialchars($this->input->post('last_calibration'));
+    $data['next_calibration'] = htmlspecialchars($this->input->post('next_calibration'));
+    
+    $this->db->insert('assets', $data);
+    return json_encode(array('status' => true, 'notification' => get_phrase('asset_added_successfully')));
+}
+
+public function asset_update($id) {
+    $data['name'] = htmlspecialchars($this->input->post('name'));
+    $data['next_calibration'] = htmlspecialchars($this->input->post('next_calibration'));
+    $data['status'] = htmlspecialchars($this->input->post('status'));
+
+    $this->db->where('id', $id);
+    $this->db->update('assets', $data);
+    return json_encode(array('status' => true, 'notification' => get_phrase('asset_updated_successfully')));
+}
+public function project_create() {
+    $data['name'] = htmlspecialchars($this->input->post('name'));
+    $data['client_name'] = htmlspecialchars($this->input->post('client_name'));
+    $data['quotation_amount'] = htmlspecialchars($this->input->post('quotation_amount'));
+    $data['site_id'] = htmlspecialchars($this->input->post('site_id'));
+    $data['start_date'] = htmlspecialchars($this->input->post('start_date'));
+    $data['deadline'] = htmlspecialchars($this->input->post('deadline'));
+    $data['status'] = 'open';
+
+    // Upload du contrat
+    if ($_FILES['contract_file']['name'] != "") {
+        $data['contract_file'] = md5(rand(100, 1000)) . '.pdf';
+        move_uploaded_file($_FILES['contract_file']['tmp_name'], 'uploads/contracts/' . $data['contract_file']);
+    }
+
+    $this->db->insert('projects', $data);
+    return json_encode(array('status' => true, 'notification' => get_phrase('project_created_successfully')));
+}
+
+public function project_update($id) {
+    $data['name'] = htmlspecialchars($this->input->post('name'));
+    $data['quotation_amount'] = htmlspecialchars($this->input->post('quotation_amount'));
+    $data['progress_percent'] = htmlspecialchars($this->input->post('progress_percent'));
+    $data['status'] = htmlspecialchars($this->input->post('status'));
+
+    if ($_FILES['contract_file']['name'] != "") {
+        $data['contract_file'] = md5(rand(100, 1000)) . '.pdf';
+        move_uploaded_file($_FILES['contract_file']['tmp_name'], 'uploads/contracts/' . $data['contract_file']);
+    }
+
+    $this->db->where('id', $id);
+    $this->db->update('projects', $data);
+    return json_encode(array('status' => true, 'notification' => get_phrase('project_updated_successfully')));
+}
+
+public function add_project_progress($project_id) {
+    // 1. Récupérer la progression actuelle
+    $project = $this->db->get_where('projects', array('id' => $project_id))->row_array();
+    $current_progress = (int)$project['progress_percent'];
+    $added_value = (int)$this->input->post('percentage');
+
+    // 2. Calculer le nouveau total
+    $new_total = $current_progress + $added_value;
+
+    // 3. Vérification : Ne pas dépasser 100
+    if ($new_total > 100) {
+        return json_encode(array(
+            'status' => false, 
+            'notification' => get_phrase('error_total_exceeds_100')
+        ));
+    }
+
+    // 4. Préparer les données de mise à jour du projet
+    $project_update = array(
+        'progress_percent' => $new_total
+    );
+
+    // LOGIQUE AUTOMATIQUE : Si 100%, on change le statut
+    if ($new_total == 100) {
+        $project_update['status'] = 'completed';
+    }
+
+    // 5. Enregistrer l'historique
+    $history_data = array(
+        'project_id'    => $project_id,
+        'title'         => htmlspecialchars($this->input->post('title')),
+        'percentage'    => $added_value,
+        'date_reported' => htmlspecialchars($this->input->post('date_reported')),
+        'updated_by'    => $this->session->userdata('user_id')
+    );
+    $this->db->insert('project_progress', $history_data);
+
+    // 6. Mettre à jour la table 'projects'
+    $this->db->where('id', $project_id);
+    $this->db->update('projects', $project_update);
+
+    // Message personnalisé si complété
+    $message = ($new_total == 100) 
+               ? get_phrase('project_completed_successfully') 
+               : get_phrase('progress_added_successfully');
+
+    return json_encode(array(
+        'status' => true, 
+        'notification' => $message . ' (Total: ' . $new_total . '%)'
+    ));
+}
+public function get_project_progress($project_id) {
+    $this->db->select('project_progress.*, users.name as user_name');
+    $this->db->from('project_progress');
+    $this->db->join('users', 'users.id = project_progress.updated_by');
+    $this->db->where('project_progress.project_id', $project_id);
+    $this->db->order_by('project_progress.date_reported', 'DESC');
+    return $this->db->get()->result_array();
+}
+// Création d'un article et initialisation du stock
+public function inventory_create() {
+    $data['name'] = htmlspecialchars($this->input->post('name'));
+    $data['sku']  = htmlspecialchars($this->input->post('sku'));
+    $data['unit'] = htmlspecialchars($this->input->post('unit'));
+    $data['category_id'] = htmlspecialchars($this->input->post('category_id'));
+
+    $this->db->insert('inventory', $data);
+    $inventory_id = $this->db->insert_id();
+
+    // Initialiser le stock à 0 pour les deux sites
+    $this->db->insert('stocks', ['inventory_id' => $inventory_id, 'site_id' => 1, 'quantity' => 0]);
+    $this->db->insert('stocks', ['inventory_id' => $inventory_id, 'site_id' => 2, 'quantity' => 0]);
+
+    return json_encode(array('status' => true, 'notification' => get_phrase('product_added_successfully')));
+}
+
+
+public function stock_update($inventory_id) {
+    $site_id  = htmlspecialchars($this->input->post('site_id'));
+    $quantity = htmlspecialchars($this->input->post('quantity'));
+
+    $data = array('quantity' => $quantity);
+
+    $this->db->where('inventory_id', $inventory_id);
+    $this->db->where('site_id', $site_id);
+    $this->db->update('stocks', $data);
+
+    return json_encode(array(
+        'status' => true, 
+        'notification' => get_phrase('stock_adjusted_successfully')
+    ));
+}
+
+// Création avec multi-articles et document
+public function exit_voucher_create() {
+    $data['code']         = 'BS-' . date('dmy') . '-' . rand(100, 999);
+    $data['site_id']      = $this->session->userdata('site_id');
+    $data['project_id']   = htmlspecialchars($this->input->post('project_id'));
+    $data['asset_id']     = htmlspecialchars($this->input->post('asset_id'));
+    $data['motive']       = htmlspecialchars($this->input->post('motive'));
+    $data['requested_by'] = $this->session->userdata('user_id');
+    $data['status']       = 'pending';
+
+    $this->db->insert('exit_vouchers', $data);
+    $voucher_id = $this->db->insert_id();
+
+    // 1. Gérer les multi-articles
+    $inventory_ids = $this->input->post('inventory_id');
+    $quantities    = $this->input->post('quantity');
+    foreach ($inventory_ids as $key => $id) {
+        $item_data = [
+            'voucher_id'   => $voucher_id,
+            'inventory_id' => $id,
+            'quantity'     => $quantities[$key]
+        ];
+        $this->db->insert('exit_voucher_items', $item_data);
+    }
+
+    // 2. Upload du document Magasinier (Facture/Demande)
+    if (!empty($_FILES['request_file']['name'])) {
+        $file_name = 'REQ_' . $voucher_id . '_' . time() . '.' . pathinfo($_FILES['request_file']['name'], PATHINFO_EXTENSION);
+        move_uploaded_file($_FILES['request_file']['tmp_name'], 'uploads/vouchers/' . $file_name);
+        
+        $this->db->insert('exit_voucher_documents', [
+            'voucher_id'  => $voucher_id,
+            'file_name'   => $file_name,
+            'file_path'   => 'uploads/vouchers/' . $file_name,
+            'uploaded_by' => $this->session->userdata('user_id'),
+            'doc_type'    => 'request_doc'
+        ]);
+    }
+
+    return json_encode(['status' => true, 'notification' => get_phrase('voucher_created_successfully')]);
+}
+
+// Approbation avec document Site Manager
+public function exit_voucher_approve($voucher_id) {
+    $voucher = $this->db->get_where('exit_vouchers', ['id' => $voucher_id])->row_array();
+    $items   = $this->db->get_where('exit_voucher_items', ['voucher_id' => $voucher_id])->result_array();
+
+    // Déduction des stocks
+    foreach ($items as $item) {
+        $this->db->where(['inventory_id' => $item['inventory_id'], 'site_id' => $voucher['site_id']]);
+        $this->db->set('quantity', 'quantity - ' . $item['quantity'], FALSE);
+        $this->db->update('stocks');
+    }
+
+    // Upload du document Site Manager (Preuve de validation)
+    if (!empty($_FILES['approval_file']['name'])) {
+        $file_name = 'APP_' . $voucher_id . '_' . time() . '.' . pathinfo($_FILES['approval_file']['name'], PATHINFO_EXTENSION);
+        move_uploaded_file($_FILES['approval_file']['tmp_name'], 'uploads/vouchers/' . $file_name);
+        
+        $this->db->insert('exit_voucher_documents', [
+            'voucher_id'  => $voucher_id,
+            'file_name'   => $file_name,
+            'file_path'   => 'uploads/vouchers/' . $file_name,
+            'uploaded_by' => $this->session->userdata('user_id'),
+            'doc_type'    => 'approval_doc'
+        ]);
+    }
+
+    $this->db->where('id', $voucher_id);
+    $this->db->update('exit_vouchers', ['status' => 'approved']);
+
+    return json_encode(['status' => true, 'notification' => get_phrase('voucher_approved')]);
+}
 }

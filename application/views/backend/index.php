@@ -47,6 +47,7 @@ $text_direction = ($current_language == 'arabic') ? 'rtl' : 'ltr';
                     }else{
                        include $user_type.'/'.$folder_name.'/'.$page_name;
                     }
+                   // var_dump([$user_type,$folder_name,$page_name])
                     ?>
                     <!-- END PLACE PAGE CONTENT HERE -->
                 </div>

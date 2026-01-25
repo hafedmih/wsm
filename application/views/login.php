@@ -1,8 +1,6 @@
 <?php
 $current_language = get_settings('language');
 $text_direction = ($current_language == 'arabic') ? 'rtl' : 'ltr';
-$donor_list = $this->db->get('donors')->result_array();
-$ministries_list = $this->db->get('ministries')->result_array();
 ?>
 <!DOCTYPE html>
 <html dir="<?php echo $text_direction; ?>" lang="<?php echo ($current_language == 'arabic') ? 'ar' : 'en'; ?>">

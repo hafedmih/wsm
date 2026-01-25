@@ -24,12 +24,10 @@ class Admin extends CI_Controller
 		$this->load->model('Crud_model',     'crud_model');
 		$this->load->model('User_model',     'user_model');
 		$this->load->model('Settings_model', 'settings_model');
-		$this->load->model('Payment_model',  'payment_model');
 		$this->load->model('Email_model',    'email_model');
 		$this->load->model('Addon_model',    'addon_model');
 		$this->load->model('Frontend_model', 'frontend_model');
-		$this->load->model('Driver_model', 'driver_model');
-
+		
 		/*cache control*/
 		$this->output->set_header("Expires: Tue, 01 Jan 2000 00:00:00 GMT");
 		$this->output->set_header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");

@@ -93,7 +93,7 @@ $display_lang = $is_rtl ? 'AR' : 'EN';
         font-weight: 700;
         font-size: 14px;
         margin: 0 5px;
-        color: #fff !important;
+        color: #000 !important;
     }
     .noti-icon {
         color: #fff !important;
@@ -158,7 +158,7 @@ $display_lang = $is_rtl ? 'AR' : 'EN';
     flex-grow: 1;
     text-align: center;
 }
-.platform-title-box h4 { margin: 0; color: #fff; font-weight: 700; }
+.platform-title-box h4 { margin: 0; color: #000; font-weight: 700; }
 </style>
 
 <!-- Topbar Start -->
