@@ -46,9 +46,15 @@
                         <p class="mb-1"><strong><?php echo get_phrase('site'); ?> :</strong> <?php echo $po['site_name']; ?></p>
                     </div>
                     <div class="col-md-6">
+                        <p class="mb-1"><strong><?php echo get_phrase('supplier'); ?> :</strong> <?php echo $po['supplier_name']; ?> (<?php echo $po['supplier_phone']; ?>)</p>
                         <p class="mb-1"><strong><?php echo get_phrase('payment_method'); ?> :</strong> <?php echo !empty($po['payment_method']) ? $po['payment_method'] : 'N/A'; ?></p>
                         <p class="mb-1"><strong><?php echo get_phrase('total_amount'); ?> :</strong> <span class="text-success fw-bold"><?php echo number_format($po['total_amount'], 2); ?> MRU</span></p>
                     </div>
+                    <div class="col-md-6">
+    <p class="mb-1"><strong><?php echo get_phrase('supplier'); ?> :</strong> <?php echo $po['supplier_name']; ?> (<?php echo $po['supplier_phone']; ?>)</p>
+    <p class="mb-1"><strong><?php echo get_phrase('total_amount'); ?> :</strong> <span class="badge badge-success-lighten" style="font-size: 14px;"><?php echo number_format($po['total_amount'], 2); ?> MRU</span></p>
+    <p class="mb-1"><strong><?php echo get_phrase('payment_method'); ?> :</strong> <?php echo $po['payment_method']; ?></p>
+</div>
                 </div>
             </div>
         </div>

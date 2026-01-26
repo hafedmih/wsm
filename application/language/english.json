@@ -767,5 +767,9 @@
     "you_have": "You have",
     "purchase_orders_waiting_for_action": "Purchase orders waiting for action",
     "view_all_tasks": "View all tasks",
-    "go_to_payments": "Go to payments"
+    "go_to_payments": "Go to payments",
+    "supplier": "supplier",
+    "supplier_name": "Supplier name",
+    "supplier_phone": "Supplier phone",
+    "update_item_prices": "Update item prices"
 }

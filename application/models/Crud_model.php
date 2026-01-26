@@ -571,7 +571,36 @@ public function manage_purchase_order($param1 = '', $param2 = '') {
 
           if ($new_status == 6) {
         $update_data['payment_method'] = $this->input->post('payment_method_name');
-    }
+    }   if ($new_status == 5) {
+            $update_data['supplier_name']  = htmlspecialchars($this->input->post('supplier_name'));
+            $update_data['supplier_phone'] = htmlspecialchars($this->input->post('supplier_phone'));
+            
+            $item_ids   = $this->input->post('item_ids');
+            $prices     = $this->input->post('unit_prices');
+            $total_po   = 0;
+
+            foreach ($item_ids as $key => $id) {
+                $unit_price = $prices[$key];
+                $this->db->where('id', $id);
+                $this->db->update('purchase_order_items', ['unit_price' => $unit_price]);
+                
+                // Calcul du total (Prix * Quantité)
+                $item = $this->db->get_where('purchase_order_items', ['id' => $id])->row_array();
+                $total_po += ($unit_price * $item['quantity']);
+            }
+            $update_data['total_amount'] = $total_po;
+        } 
+        if ($new_status == 7) {
+            $po = $this->db->get_where('purchase_orders', ['id' => $po_id])->row_array();
+            $items = $this->db->get_where('purchase_order_items', ['purchase_order_id' => $po_id])->result_array();
+
+            foreach ($items as $item) {
+                // On augmente le stock sur le site concerné
+                $this->db->where(['inventory_id' => $item['inventory_id'], 'site_id' => $po['site_id']]);
+                $this->db->set('quantity', 'quantity + ' . $item['quantity'], FALSE);
+                $this->db->update('stocks');
+            }
+        }
         
         // Gestion de l'upload de document
         if (!empty($_FILES['po_document']['name'])) {
