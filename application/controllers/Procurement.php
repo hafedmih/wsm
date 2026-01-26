@@ -32,6 +32,8 @@ class Procurement extends CI_Controller {
     }
 
     public function dashboard() {
+        
+         $page_data['pending_po_count'] = $this->crud_model->get_pending_tasks_count();
         $page_data['page_title']  = 'Procurement Dashboard';
         $page_data['folder_name'] = 'dashboard'; // Dossier sous views/backend/procurement/
         $page_data['page_name']   = 'index';     // Fichier index.php
@@ -42,10 +44,12 @@ class Procurement extends CI_Controller {
         echo $this->crud_model->manage_purchase_order($param1, $param2);
     }
     elseif ($param1 == 'list') {
-        $this->load->view('backend/'.$this->session->userdata('user_type').'/purchase_order/list');
+        $page_data['step_filter'] = $this->input->get('step');
+        $this->load->view('backend/'.$this->session->userdata('user_type').'/purchase_order/list',$page_data['step_filter']);
     }
     elseif (empty($param1)) {
-        $page_data['folder_name'] = 'purchase_order';
+         $page_data['step_filter'] = $this->input->get('step');
+         $page_data['folder_name'] = 'purchase_order';
         $page_data['page_title'] = 'purchase_orders';
         $this->load->view('backend/index', $page_data);
     }

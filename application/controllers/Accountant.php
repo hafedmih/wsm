@@ -36,6 +36,7 @@ class Accountant extends CI_Controller {
 	{
 
 		// $this->msg91_model->clickatell();
+        $page_data['pending_po_count'] = $this->crud_model->get_pending_tasks_count();
 		$page_data['page_title'] = 'Dashboard';
 		$page_data['folder_name'] = 'dashboard';
 		$this->load->view('backend/index', $page_data);
@@ -45,10 +46,13 @@ class Accountant extends CI_Controller {
             echo $this->crud_model->manage_purchase_order($param1, $param2);
         }
         elseif ($param1 == 'list') {
+            $page_data['step_filter'] = $this->input->get('step'); 
+        
             // Utilise la vue commune située dans backend/purchase_order/
-            $this->load->view('backend/'.$this->session->userdata('user_type').'/purchase_order/list');
+            $this->load->view('backend/'.$this->session->userdata('user_type').'/purchase_order/list',$page_data);
         }
         elseif (empty($param1)) {
+             $page_data['step_filter'] = $this->input->get('step');
             $page_data['folder_name'] = 'purchase_order';
             $page_data['page_title'] = 'purchase_orders_to_fulfill';
             $this->load->view('backend/index', $page_data);

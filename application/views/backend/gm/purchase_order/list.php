@@ -2,6 +2,7 @@
     $user_type = strtolower($this->session->userdata('user_type'));
     $session_site_id = $this->session->userdata('site_id');
 
+    $step_filter = isset($step_filter) ? $step_filter : $this->input->get('step');
     // 1. Construction de la requête
     $this->db->select('purchase_orders.*, projects.name as project_name, users.name as creator_name, sites.name as site_name');
     $this->db->from('purchase_orders');
@@ -17,7 +18,9 @@
             $this->db->where('purchase_orders.site_id', $session_site_id);
         }
     }
-    
+     if(!empty($step_filter)) {
+        $this->db->where('purchase_orders.status', $step_filter);
+    }
     $this->db->order_by('purchase_orders.id', 'DESC');
     $purchase_orders = $this->db->get()->result_array();
 
@@ -29,7 +32,7 @@
         4 => ['lbl' => 'GM Signed', 'class' => 'badge-warning-lighten', 'next' => 5],
         5 => ['lbl' => 'Invoiced (Purchasing)', 'class' => 'badge-dark-lighten', 'next' => 6],
         6 => ['lbl' => 'Paid (GM)', 'class' => 'badge-success-lighten', 'next' => 7],
-        7 => ['lbl' => 'Archived', 'class' => 'badge-success', 'next' => null]
+        7 => ['lbl' => 'Archived', 'class' => 'badge-secondary-lighten', 'next' => null]
     ];
 ?>
 

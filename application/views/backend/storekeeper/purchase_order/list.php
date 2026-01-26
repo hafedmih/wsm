@@ -29,7 +29,7 @@
         4 => ['lbl' => 'GM Signed', 'class' => 'badge-warning-lighten', 'next' => 5],
         5 => ['lbl' => 'Invoiced (Purchasing)', 'class' => 'badge-dark-lighten', 'next' => 6],
         6 => ['lbl' => 'Paid (GM)', 'class' => 'badge-success-lighten', 'next' => 7],
-        7 => ['lbl' => 'Archived', 'class' => 'badge-success', 'next' => null]
+        7 => ['lbl' => 'Archived', 'class' => 'badge-secondary-lighten', 'next' => null]
     ];
 ?>
 

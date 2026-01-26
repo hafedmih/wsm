@@ -603,5 +603,34 @@ public function manage_purchase_order($param1 = '', $param2 = '') {
         return json_encode(['status' => true, 'notification' => get_phrase('po_status_updated_to_step') . ' ' . $new_status]);
     }
 }
+public function get_pending_tasks_count() {
+    $user_type = strtolower($this->session->userdata('user_type'));
+    $site_id   = $this->session->userdata('site_id');
+
+    $this->db->from('purchase_orders');
+
+    if ($user_type == 'sitemanager') {
+        $this->db->where('status', 1);
+        $this->db->where('site_id', $site_id);
+    } 
+    elseif ($user_type == 'procurement') {
+        $this->db->where('status', 2);
+    } 
+    elseif ($user_type == 'gm') {
+        // Le GM a deux tâches : Signer (3) et Payer (5)
+        $this->db->where_in('status', [3, 5]);
+    } 
+    elseif ($user_type == 'purchasingagent') {
+        $this->db->where('status', 4);
+    } 
+    elseif ($user_type == 'accountant' || $user_type == 'daf') {
+        $this->db->where('status', 6);
+    } 
+    else {
+        return 0;
+    }
+
+    return $this->db->count_all_results();
+}
 
         }
