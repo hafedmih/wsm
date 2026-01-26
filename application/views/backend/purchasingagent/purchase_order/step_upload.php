@@ -29,6 +29,20 @@
                 <input type="text" name="supplier_phone" class="form-control">
             </div>
         </div>
+    <h5 class="mt-3"><?php echo get_phrase('accepted_payment_methods_by_supplier'); ?></h5>
+    <div class="row px-2">
+        <?php 
+            $all_methods = $this->db->get_where('payment_methods', ['status' => 1])->result_array();
+            foreach($all_methods as $m): 
+        ?>
+        <div class="col-md-4 mb-1">
+            <div class="form-check">
+                <input type="checkbox" name="suggested_methods[]" value="<?php echo $m['name']; ?>" class="form-check-input" id="meth_<?php echo $m['id']; ?>">
+                <label class="form-check-label" for="meth_<?php echo $m['id']; ?>"><?php echo $m['name']; ?></label>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
         <h5 class="mt-3"><?php echo get_phrase('update_item_prices'); ?></h5>
         <div class="table-responsive">
             <table class="table table-sm">

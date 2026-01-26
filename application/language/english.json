@@ -771,5 +771,17 @@
     "supplier": "supplier",
     "supplier_name": "Supplier name",
     "supplier_phone": "Supplier phone",
-    "update_item_prices": "Update item prices"
+    "update_item_prices": "Update item prices",
+    "supplier_accepted_methods": "Supplier accepted methods",
+    "accepted_payment_methods_by_supplier": "Accepted payment methods by supplier",
+    "project_details": "Project details",
+    "supplier_details": "Supplier details",
+    "accepted_methods": "Accepted methods",
+    "financial_summary": "Financial summary",
+    "payment_status": "Payment status",
+    "payment_pending": "Payment pending",
+    "choose_from_supplier_options": "Choose from supplier options",
+    "only_methods_accepted_by_this_supplier_are_shown": "Only methods accepted by this supplier are shown",
+    "paid_via": "Paid via",
+    "not_specified": "Not specified"
 }

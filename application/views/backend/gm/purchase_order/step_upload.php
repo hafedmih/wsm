@@ -17,19 +17,22 @@
     <input type="hidden" name="doc_type" value="<?php echo $config['type']; ?>">
 
     <!-- AJOUT : Menu déroulant des banques SI étape 6 -->
-    <?php if($next_status == 6): ?>
+    <?php if($next_status == 6):
+         $po = $this->db->get_where('purchase_orders', ['id' => $po_id])->row_array();
+         $allowed_methods = explode(',', $po['suggested_payment_methods']);
+        ?>
     <div class="form-group mb-3">
-        <label><?php echo get_phrase('select_payment_method'); ?> *</label>
-        <select name="payment_method_name" class="form-control select2" data-toggle="select2" required>
-            <option value=""><?php echo get_phrase('choose_bank_or_app'); ?></option>
-            <?php 
-                $methods = $this->db->get_where('payment_methods', ['status' => 1])->result_array();
-                foreach($methods as $m): 
-            ?>
-                <option value="<?php echo $m['name']; ?>"><?php echo $m['name']; ?></option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+    <label><?php echo get_phrase('select_payment_method'); ?> *</label>
+    <select name="payment_method_name" class="form-control select2" data-toggle="select2" required>
+        <option value=""><?php echo get_phrase('choose_from_supplier_options'); ?></option>
+        <?php foreach($allowed_methods as $method_name): ?>
+            <?php if(!empty($method_name)): ?>
+                <option value="<?php echo $method_name; ?>"><?php echo $method_name; ?></option>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </select>
+    <small class="text-muted"><?php echo get_phrase('only_methods_accepted_by_this_supplier_are_shown'); ?></small>
+</div>
     <?php endif; ?>
 
     <div class="form-group mb-3">

@@ -36,29 +36,63 @@
 <div class="row">
     <!-- SECTION 1 : INFORMATIONS GÉNÉRALES -->
     <div class="col-12 mb-3">
-        <div class="card border shadow-none">
-            <div class="card-body">
-                <h5 class="header-title text-primary mb-2"><i class="mdi mdi-information-outline"></i> <?php echo get_phrase('po_general_information'); ?></h5>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-1"><strong><?php echo get_phrase('po_code'); ?> :</strong> <span class="badge badge-dark-lighten"><?php echo $po['code']; ?></span></p>
-                        <p class="mb-1"><strong><?php echo get_phrase('project'); ?> :</strong> <?php echo $po['project_name']; ?></p>
-                        <p class="mb-1"><strong><?php echo get_phrase('site'); ?> :</strong> <?php echo $po['site_name']; ?></p>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-1"><strong><?php echo get_phrase('supplier'); ?> :</strong> <?php echo $po['supplier_name']; ?> (<?php echo $po['supplier_phone']; ?>)</p>
-                        <p class="mb-1"><strong><?php echo get_phrase('payment_method'); ?> :</strong> <?php echo !empty($po['payment_method']) ? $po['payment_method'] : 'N/A'; ?></p>
-                        <p class="mb-1"><strong><?php echo get_phrase('total_amount'); ?> :</strong> <span class="text-success fw-bold"><?php echo number_format($po['total_amount'], 2); ?> MRU</span></p>
-                    </div>
-                    <div class="col-md-6">
-    <p class="mb-1"><strong><?php echo get_phrase('supplier'); ?> :</strong> <?php echo $po['supplier_name']; ?> (<?php echo $po['supplier_phone']; ?>)</p>
-    <p class="mb-1"><strong><?php echo get_phrase('total_amount'); ?> :</strong> <span class="badge badge-success-lighten" style="font-size: 14px;"><?php echo number_format($po['total_amount'], 2); ?> MRU</span></p>
-    <p class="mb-1"><strong><?php echo get_phrase('payment_method'); ?> :</strong> <?php echo $po['payment_method']; ?></p>
-</div>
+    <div class="card border shadow-none">
+        <div class="card-body">
+            <h5 class="header-title text-primary mb-3">
+                <i class="mdi mdi-information-outline"></i> <?php echo get_phrase('po_general_information'); ?>
+            </h5>
+            
+            <div class="row">
+                <!-- BLOC 1 : Détails du Projet -->
+                <div class="col-md-4 border-end">
+                    <p class="text-muted mb-1 font-13"><?php echo get_phrase('project_details'); ?></p>
+                    <p class="mb-1"><strong><?php echo get_phrase('po_code'); ?> :</strong> <span class="badge badge-dark-lighten"><?php echo $po['code']; ?></span></p>
+                    <p class="mb-1"><strong><?php echo get_phrase('project'); ?> :</strong> <br><?php echo $po['project_name']; ?></p>
+                    <p class="mb-1"><strong><?php echo get_phrase('site'); ?> :</strong> <br><?php echo $po['site_name']; ?></p>
                 </div>
-            </div>
-        </div>
-    </div>
+
+                <!-- BLOC 2 : Détails du Fournisseur -->
+                <div class="col-md-4 border-end">
+                    <p class="text-muted mb-1 font-13"><?php echo get_phrase('supplier_details'); ?></p>
+                    <p class="mb-1"><strong><?php echo get_phrase('name'); ?> :</strong> <br><?php echo !empty($po['supplier_name']) ? $po['supplier_name'] : '---'; ?></p>
+                    <p class="mb-1"><strong><?php echo get_phrase('phone'); ?> :</strong> <br><?php echo !empty($po['supplier_phone']) ? $po['supplier_phone'] : '---'; ?></p>
+                    <p class="mb-0"><strong><?php echo get_phrase('accepted_methods'); ?> :</strong></p>
+                    <div class="mt-1">
+                        <?php 
+                        if(!empty($po['suggested_payment_methods'])):
+                            $tags = explode(',', $po['suggested_payment_methods']);
+                            foreach($tags as $t): ?>
+                                <span class="badge badge-outline-secondary"><?php echo trim($t); ?></span>
+                            <?php endforeach; 
+                        else:
+                            echo '<small class="text-muted italic">'.get_phrase('not_specified').'</small>';
+                        endif;
+                        ?>
+                    </div>
+                </div>
+
+                <!-- BLOC 3 : Finance & Paiement -->
+                <div class="col-md-4">
+                    <p class="text-muted mb-1 font-13"><?php echo get_phrase('financial_summary'); ?></p>
+                    <p class="mb-2">
+                        <strong><?php echo get_phrase('total_amount'); ?> :</strong> <br>
+                        <span class="badge badge-success-lighten" style="font-size: 16px;">
+                            <?php echo number_format($po['total_amount'], 2); ?> MRU
+                        </span>
+                    </p>
+                    
+                    <p class="mb-1"><strong><?php echo get_phrase('payment_status'); ?> :</strong><br>
+                        <?php if($po['status'] >= 6): ?>
+                            <span class="text-success fw-bold"><i class="mdi mdi-check-decagram"></i> <?php echo get_phrase('paid_via'); ?> : <?php echo $po['payment_method']; ?></span>
+                        <?php else: ?>
+                            <span class="text-warning italic"><i class="mdi mdi-clock-outline"></i> <?php echo get_phrase('payment_pending'); ?></span>
+                        <?php endif; ?>
+                    </p>
+                </div>
+            </div> <!-- end row -->
+        </div> <!-- end card-body -->
+    </div> <!-- end card -->
+</div>
 
     <!-- SECTION 2 : WORKFLOW HISTORY (TIMELINE) -->
     <div class="col-12 mb-3">

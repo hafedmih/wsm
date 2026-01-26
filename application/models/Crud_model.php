@@ -575,6 +575,11 @@ public function manage_purchase_order($param1 = '', $param2 = '') {
             $update_data['supplier_name']  = htmlspecialchars($this->input->post('supplier_name'));
             $update_data['supplier_phone'] = htmlspecialchars($this->input->post('supplier_phone'));
             
+             $suggested = $this->input->post('suggested_methods');
+           if (!empty($suggested)) {
+        $update_data['suggested_payment_methods'] = implode(',', $suggested);
+    }
+            
             $item_ids   = $this->input->post('item_ids');
             $prices     = $this->input->post('unit_prices');
             $total_po   = 0;
