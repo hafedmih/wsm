@@ -11,7 +11,7 @@
     ];
     $config = $titles[$next_status];
 ?>
-
+<?php include 'details.php'; ?>
 <form method="POST" class="d-block ajaxForm" action="<?php echo site_url($this->session->userdata('user_type').'/purchase_order/update_status/'.$po_id); ?>" enctype="multipart/form-data">
     <input type="hidden" name="status" value="<?php echo $next_status; ?>">
     <input type="hidden" name="doc_type" value="<?php echo $config['type']; ?>">

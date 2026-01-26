@@ -170,20 +170,7 @@ $text_direction = ($current_language == 'arabic') ? 'rtl' : 'ltr';
         </div>
 
         <!-- Institution Selection (Posts as school_id) -->
-        <div class="form-group mb-2">
-            <label><?php echo get_phrase('institution'); ?></label>
-            <select class="form-control" name="school_id" required>
-                <option value=""><?php echo get_phrase('select_your_institution'); ?></option>
-                <?php foreach($donor_list as $donor): ?>
-                    <option value="<?php echo $donor['id']; ?>">
-                        <?php 
-                            echo ($current_language == 'arabic' && !empty($donor['name_ar'])) ? $donor['name_ar'] : $donor['name']; 
-                        ?>
-                        <?php  echo "(".$donor['abbr'].")"; ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+        
 
         <!-- Address Field -->
          <div class="form-group mb-3">
@@ -238,21 +225,7 @@ $text_direction = ($current_language == 'arabic') ? 'rtl' : 'ltr';
         </div>
 
         <!-- NEW: Ministry Selection (Posts as school_id) -->
-        <div class="form-group mb-2">
-            <label><?php echo get_phrase('ministry'); ?></label>
-            <select class="form-control" name="school_id" required>
-                <option value=""><?php echo get_phrase('select_your_ministry'); ?></option>
-                <?php foreach($ministries_list as $min): ?>
-                    <option value="<?php echo $min['id']; ?>">
-                        <?php 
-                            // Display Arabic name if current language is Arabic
-                            echo ($current_language == 'arabic' && !empty($min['name_ar'])) ? $min['name_ar'] : $min['name']; 
-                        ?>
-                        <?php if(!empty($min['abbr'])): ?> (<?php echo $min['abbr']; ?>)<?php endif; ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+       
 
         <!-- Department Title (Post as address) -->
         <div class="form-group mb-2">
