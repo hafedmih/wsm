@@ -530,4 +530,78 @@ public function exit_voucher_approve($voucher_id) {
 
     return json_encode(['status' => true, 'notification' => get_phrase('voucher_approved')]);
 }
+public function manage_purchase_order($param1 = '', $param2 = '') {
+    
+    // --- ÉTAPE 1 : CRÉATION DU BON (Storekeeper / Magasinier) ---
+    if ($param1 == 'create') {
+        $data['code']         = 'PO-' . date('Ymd') . '-' . rand(100, 999);
+        $data['project_id']   = htmlspecialchars($this->input->post('project_id'));
+        $data['site_id']      = $this->session->userdata('site_id');
+        $data['requested_by'] = $this->session->userdata('user_id');
+        $data['status']       = 1; // Statut initial : Draft
+
+        // Insertion du bon principal
+        $this->db->insert('purchase_orders', $data);
+        $po_id = $this->db->insert_id();
+
+        // Insertion des articles (Multi-items)
+        $inventory_ids = $this->input->post('inventory_id');
+        $quantities    = $this->input->post('quantity');
+
+        if (!empty($inventory_ids)) {
+            foreach ($inventory_ids as $key => $id) {
+                $item_data = [
+                    'purchase_order_id' => $po_id,
+                    'inventory_id'      => $id,
+                    'quantity'          => $quantities[$key]
+                ];
+                $this->db->insert('purchase_order_items', $item_data);
+            }
+        }
+
+        return json_encode(['status' => true, 'notification' => get_phrase('purchase_order_created_successfully')]);
+    }
+
+    // --- ÉTAPES 2 À 7 : VALIDATION ET UPLOAD DE DOCUMENTS ---
+    if ($param1 == 'update_status') {
+        $po_id = $param2;
+        // Le statut peut venir du POST (via step_upload) ou du segment URL (via confirmModal)
+        $new_status = $this->input->post('status') ? $this->input->post('status') : $this->uri->segment(5);
+        $update_data = ['status' => $new_status];
+
+          if ($new_status == 6) {
+        $update_data['payment_method'] = $this->input->post('payment_method_name');
+    }
+        
+        // Gestion de l'upload de document
+        if (!empty($_FILES['po_document']['name'])) {
+            $type = $this->input->post('doc_type'); 
+            $file_ext = pathinfo($_FILES['po_document']['name'], PATHINFO_EXTENSION);
+            $file_name = $type . '_' . $po_id . '_' . time() . '.' . $file_ext;
+            
+            // Création du dossier si inexistant
+            if (!is_dir('uploads/po')) {
+                mkdir('uploads/po', 0777, true);
+            }
+            
+            if (move_uploaded_file($_FILES['po_document']['tmp_name'], 'uploads/po/' . $file_name)) {
+                $doc_data = [
+                    'purchase_order_id' => $po_id,
+                    'file_name'         => $file_name,
+                    'file_path'         => 'uploads/po/' . $file_name,
+                    'doc_type'          => $type,
+                    'uploaded_by'       => $this->session->userdata('user_id')
+                ];
+                $this->db->insert('purchase_order_docs', $doc_data);
+            }
+        }
+
+        // Mise à jour du statut dans la table principale
+        $this->db->where('id', $po_id);
+        $this->db->update('purchase_orders', $update_data);
+        
+        return json_encode(['status' => true, 'notification' => get_phrase('po_status_updated_to_step') . ' ' . $new_status]);
+    }
 }
+
+        }

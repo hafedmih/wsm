@@ -90,4 +90,17 @@ public function exit_voucher($param1 = '', $param2 = '') {
         $this->load->view('backend/index', $page_data);
     }
 }
+public function purchase_order($param1 = '', $param2 = '') {
+    if ($param1 == 'create' || $param1 == 'update_status') {
+        echo $this->crud_model->manage_purchase_order($param1, $param2);
+    }
+    elseif ($param1 == 'list') {
+        $this->load->view('backend/'.$this->session->userdata('user_type').'/purchase_order/list');
+    }
+    elseif (empty($param1)) {
+        $page_data['folder_name'] = 'purchase_order';
+        $page_data['page_title'] = 'purchase_orders';
+        $this->load->view('backend/index', $page_data);
+    }
+}
 }
