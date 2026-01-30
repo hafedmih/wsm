@@ -968,33 +968,63 @@ class User_model extends CI_Model {
 	}
 
 	public function update_profile() {
-		$response = array();
-		$user_id = $this->session->userdata('user_id');
-		$data['name'] = htmlspecialchars($this->input->post('name'));
-		$data['email'] = htmlspecialchars($this->input->post('email'));
-		$data['phone'] = htmlspecialchars($this->input->post('phone'));
-		$data['address'] = htmlspecialchars($this->input->post('address'));
-		// Check Duplication
-		$duplication_status = $this->check_duplication('on_update', $data['email'], $user_id);
-		if($duplication_status) {
-			$this->db->where('id', $user_id);
-			$this->db->update('users', $data);
+    $response = array();
+    $user_id = $this->session->userdata('user_id');
+    $data['name'] = htmlspecialchars($this->input->post('name'));
+    $data['email'] = htmlspecialchars($this->input->post('email'));
+    $data['phone'] = htmlspecialchars($this->input->post('phone'));
+    $data['address'] = htmlspecialchars($this->input->post('address'));
 
-			move_uploaded_file($_FILES['profile_image']['tmp_name'], 'uploads/users/'.$user_id.'.jpg');
+    // --- LOGIQUE DU SIGNATURE PAD ---
+    $signature_data = $this->input->post('signature_data');
+    if (!empty($signature_data)) {
+        // 1. Supprimer l'ancienne signature si elle existe pour ne pas encombrer le serveur
+        $old_signature = $this->db->get_where('users', array('id' => $user_id))->row()->signature;
+        if (!empty($old_signature) && file_exists('uploads/signatures/' . $old_signature)) {
+            unlink('uploads/signatures/' . $old_signature);
+        }
 
-			$response = array(
-				'status' => true,
-				'notification' => get_phrase('profile_updated_successfully')
-			);
-		}else{
-			$response = array(
-				'status' => false,
-				'notification' => get_phrase('sorry_this_email_has_been_taken')
-			);
-		}
+        // 2. Décoder l'image Base64 envoyée par le Signature Pad
+        // Format reçu : "data:image/png;base64,iVBORw0KGgoAAAANSUh..."
+        $encoded_image = explode(",", $signature_data)[1];
+        $decoded_image = base64_decode($encoded_image);
 
-		return json_encode($response);
-	}
+        // 3. Créer un nom de fichier unique et l'enregistrer
+        $signature_filename = 'sig_' . $user_id . '_' . time() . '.png';
+        $file_path = 'uploads/signatures/' . $signature_filename;
+        
+        // On sauvegarde le fichier physiquement
+        file_put_contents($file_path, $decoded_image);
+        
+        // On ajoute le nom du fichier à la mise à jour de la base de données
+        $data['signature'] = $signature_filename;
+    }
+    // --------------------------------
+
+    // Check Duplication (Logique existante)
+    $duplication_status = $this->check_duplication('on_update', $data['email'], $user_id);
+    if($duplication_status) {
+        $this->db->where('id', $user_id);
+        $this->db->update('users', $data);
+
+        // Upload image de profil (Logique existante améliorée avec vérification de fichier)
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['tmp_name'] != "") {
+            move_uploaded_file($_FILES['profile_image']['tmp_name'], 'uploads/users/'.$user_id.'.jpg');
+        }
+
+        $response = array(
+            'status' => true,
+            'notification' => get_phrase('profile_updated_successfully')
+        );
+    } else {
+        $response = array(
+            'status' => false,
+            'notification' => get_phrase('sorry_this_email_has_been_taken')
+        );
+    }
+
+    return json_encode($response);
+}
 
 	public function update_password() {
 		$user_id = $this->session->userdata('user_id');

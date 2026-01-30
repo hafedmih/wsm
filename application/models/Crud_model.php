@@ -538,105 +538,132 @@ public function manage_purchase_order($param1 = '', $param2 = '') {
         $data['project_id']   = htmlspecialchars($this->input->post('project_id'));
         $data['site_id']      = $this->session->userdata('site_id');
         $data['requested_by'] = $this->session->userdata('user_id');
-        $data['status']       = 1; // Statut initial : Draft
+        $data['status']       = 1; 
 
-        // Insertion du bon principal
         $this->db->insert('purchase_orders', $data);
         $po_id = $this->db->insert_id();
 
-        // Insertion des articles (Multi-items)
+        // Récupération des articles (Multi-items)
         $inventory_ids = $this->input->post('inventory_id');
+        $custom_names  = $this->input->post('custom_item_name'); // NOUVEAU
         $quantities    = $this->input->post('quantity');
 
-        if (!empty($inventory_ids)) {
-            foreach ($inventory_ids as $key => $id) {
+        if (!empty($quantities)) {
+            foreach ($quantities as $key => $qty) {
                 $item_data = [
                     'purchase_order_id' => $po_id,
-                    'inventory_id'      => $id,
-                    'quantity'          => $quantities[$key]
+                    'inventory_id'      => (!empty($inventory_ids[$key])) ? $inventory_ids[$key] : NULL,
+                    'custom_item_name'  => (!empty($custom_names[$key])) ? $custom_names[$key] : NULL,
+                    'quantity'          => $qty
                 ];
                 $this->db->insert('purchase_order_items', $item_data);
             }
         }
 
-        return json_encode(['status' => true, 'notification' => get_phrase('purchase_order_created_successfully')]);
+        // --- GÉNÉRATION AUTOMATIQUE DU PDF ÉTAPE 1 ---
+        $this->generate_po_document($po_id, 'step1_request');
+
+        return json_encode(['status' => true, 'notification' => get_phrase('purchase_order_created_and_pdf_generated')]);
     }
 
-    // --- ÉTAPES 2 À 7 : VALIDATION ET UPLOAD DE DOCUMENTS ---
+    // --- ÉTAPES 2 À 7 : VALIDATION ---
     if ($param1 == 'update_status') {
         $po_id = $param2;
-        // Le statut peut venir du POST (via step_upload) ou du segment URL (via confirmModal)
         $new_status = $this->input->post('status') ? $this->input->post('status') : $this->uri->segment(5);
         $update_data = ['status' => $new_status];
 
-          if ($new_status == 6) {
-        $update_data['payment_method'] = $this->input->post('payment_method_name');
-    }   if ($new_status == 5) {
+        // Étape 6 : Paiement (Méthode)
+        if ($new_status == 6) {
+            $update_data['payment_method'] = $this->input->post('payment_method_name');
+        }   
+        
+        // Étape 5 : Agent d'achat (Prix et fournisseurs)
+        if ($new_status == 5) {
             $update_data['supplier_name']  = htmlspecialchars($this->input->post('supplier_name'));
             $update_data['supplier_phone'] = htmlspecialchars($this->input->post('supplier_phone'));
+            $suggested = $this->input->post('suggested_methods');
+            if (!empty($suggested)) {
+                $update_data['suggested_payment_methods'] = implode(',', $suggested);
+            }
             
-             $suggested = $this->input->post('suggested_methods');
-           if (!empty($suggested)) {
-        $update_data['suggested_payment_methods'] = implode(',', $suggested);
-    }
-            
-            $item_ids   = $this->input->post('item_ids');
-            $prices     = $this->input->post('unit_prices');
-            $total_po   = 0;
+            $item_ids = $this->input->post('item_ids');
+            $prices   = $this->input->post('unit_prices');
+            $total_po = 0;
 
             foreach ($item_ids as $key => $id) {
                 $unit_price = $prices[$key];
                 $this->db->where('id', $id);
                 $this->db->update('purchase_order_items', ['unit_price' => $unit_price]);
                 
-                // Calcul du total (Prix * Quantité)
                 $item = $this->db->get_where('purchase_order_items', ['id' => $id])->row_array();
                 $total_po += ($unit_price * $item['quantity']);
             }
             $update_data['total_amount'] = $total_po;
         } 
+
+        // Étape 7 : Archivage (Mise à jour du stock physique)
         if ($new_status == 7) {
             $po = $this->db->get_where('purchase_orders', ['id' => $po_id])->row_array();
             $items = $this->db->get_where('purchase_order_items', ['purchase_order_id' => $po_id])->result_array();
 
             foreach ($items as $item) {
-                // On augmente le stock sur le site concerné
-                $this->db->where(['inventory_id' => $item['inventory_id'], 'site_id' => $po['site_id']]);
-                $this->db->set('quantity', 'quantity + ' . $item['quantity'], FALSE);
-                $this->db->update('stocks');
+                // On n'augmente le stock que si l'article est lié à l'inventaire
+                if (!empty($item['inventory_id']) && $item['inventory_id'] > 0) {
+                    $this->db->where(['inventory_id' => $item['inventory_id'], 'site_id' => $po['site_id']]);
+                    $this->db->set('quantity', 'quantity + ' . $item['quantity'], FALSE);
+                    $this->db->update('stocks');
+                }
             }
         }
         
-        // Gestion de l'upload de document
+        // Gestion des documents (Upload manuel ou Signature Automatique)
         if (!empty($_FILES['po_document']['name'])) {
-            $type = $this->input->post('doc_type'); 
-            $file_ext = pathinfo($_FILES['po_document']['name'], PATHINFO_EXTENSION);
-            $file_name = $type . '_' . $po_id . '_' . time() . '.' . $file_ext;
-            
-            // Création du dossier si inexistant
-            if (!is_dir('uploads/po')) {
-                mkdir('uploads/po', 0777, true);
-            }
-            
-            if (move_uploaded_file($_FILES['po_document']['tmp_name'], 'uploads/po/' . $file_name)) {
-                $doc_data = [
-                    'purchase_order_id' => $po_id,
-                    'file_name'         => $file_name,
-                    'file_path'         => 'uploads/po/' . $file_name,
-                    'doc_type'          => $type,
-                    'uploaded_by'       => $this->session->userdata('user_id')
-                ];
-                $this->db->insert('purchase_order_docs', $doc_data);
-            }
+            $this->upload_po_file($po_id);
         }
 
-        // Mise à jour du statut dans la table principale
         $this->db->where('id', $po_id);
         $this->db->update('purchase_orders', $update_data);
         
-        return json_encode(['status' => true, 'notification' => get_phrase('po_status_updated_to_step') . ' ' . $new_status]);
+        return json_encode(['status' => true, 'notification' => get_phrase('po_status_updated')]);
     }
 }
+
+/**
+ * Génère le PDF du Bon de Commande avec la signature du profil
+ */
+private function generate_po_document($po_id, $doc_type) {
+    $this->load->library('pdf');
+    $user_id = $this->session->userdata('user_id');
+    
+    // Récupération des données pour le PDF
+    $page_data['po_id']    = $po_id;
+    $page_data['user']     = $this->db->get_where('users', ['id' => $user_id])->row_array();
+    
+    // Charge la vue HTML du template PDF
+    $html = $this->load->view('backend/storekeeper/purchase_order/pdf_template', $page_data, true);
+    
+    $file_name = $doc_type . '_' . $po_id . '_' . time() . '.pdf';
+    $file_path = 'uploads/po/' . $file_name;
+
+    // Création du dossier si inexistant
+    if (!is_dir('uploads/po')) mkdir('uploads/po', 0777, true);
+
+    // Génération du PDF
+    $this->pdf->load_html($html);
+    $this->pdf->render();
+    file_put_contents($file_path, $this->pdf->output());
+
+    // Enregistrement dans la table des documents
+    $doc_data = [
+        'purchase_order_id' => $po_id,
+        'file_name'         => $file_name,
+        'file_path'         => $file_path,
+        'doc_type'          => $doc_type,
+        'uploaded_by'       => $user_id
+    ];
+    $this->db->insert('purchase_order_docs', $doc_data);
+}
+
 public function get_pending_tasks_count() {
     $user_type = strtolower($this->session->userdata('user_type'));
     $site_id   = $this->session->userdata('site_id');
@@ -665,6 +692,30 @@ public function get_pending_tasks_count() {
     }
 
     return $this->db->count_all_results();
+}
+public function add_signature($po_id) {
+    $status = $this->input->post('status');
+    $sig_data = $this->input->post('signature_data');
+
+    // 1. Sauvegarder l'image de la signature
+    $sig_data = str_replace('data:image/png;base64,', '', $sig_data);
+    $sig_data = str_replace(' ', '+', $sig_data);
+    $sig_image = base64_decode($sig_data);
+    
+    $file_name = 'sig_'.$status.'_'.$po_id.'_'.time().'.png';
+    $file_path = 'uploads/po/signatures/'.$file_name;
+    file_put_contents($file_path, $sig_image);
+
+    // 2. Enregistrer dans la DB
+    $column = '';
+    if($status == 2) $column = 'signature_site_manager';
+    if($status == 3) $column = 'signature_procurement';
+    if($status == 4) $column = 'signature_gm';
+
+    $this->db->where('id', $po_id);
+    $this->db->update('purchase_orders', [$column => $file_path, 'status' => $status]);
+
+    return json_encode(['status' => true]);
 }
 
         }

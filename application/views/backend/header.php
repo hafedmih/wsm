@@ -20,7 +20,11 @@ $is_rtl = ($current_language == 'arabic');
 // 2-letter display for space saving on mobile
 $display_lang = $is_rtl ? 'AR' : 'EN'; 
 ?>
-
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<style>
+    .signature-component { border: 1px solid #ccc; width: 100%; height: 200px; background: #fff; }
+    canvas { width: 100%; height: 100%; }
+</style>
 <style>
     /* 1. TOPBAR HEIGHT & LAYOUT */
     

@@ -115,6 +115,11 @@ public function purchase_order($param1 = '', $param2 = '') {
          $page_data['step_filter'] = $this->input->get('step'); 
         $this->load->view('backend/'.$this->session->userdata('user_type').'/purchase_order/list',$page_data);
     }
+     if ($param1 == 'step_sign_digital') {
+        // Cette fonction gérera l'upload du BC signé par le GM
+        echo $this->crud_model->po_gm_signature($param2); // param2 = ID du Bon
+        return;
+    }
     elseif (empty($param1)) {
         $page_data['step_filter'] = $this->input->get('step');
         $page_data['folder_name'] = 'purchase_order';
@@ -122,4 +127,22 @@ public function purchase_order($param1 = '', $param2 = '') {
         $this->load->view('backend/index', $page_data);
     }
 }
+public function profile($param1 = "", $param2 = "")
+	{
+		if ($param1 == 'update_profile') {
+			$response = $this->user_model->update_profile();
+			echo $response;
+		}
+		if ($param1 == 'update_password') {
+			$response = $this->user_model->update_password();
+			echo $response;
+		}
+
+		// showing the Smtp Settings file
+		if (empty($param1)) {
+			$page_data['folder_name'] = 'profile';
+			$page_data['page_title']  = 'manage_profile';
+			$this->load->view('backend/index', $page_data);
+		}
+	}
     }

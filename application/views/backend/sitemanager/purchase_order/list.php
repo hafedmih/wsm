@@ -72,6 +72,10 @@
                     </span>
                 </td>
                 <td>
+    <button onclick="rightModal('<?php echo site_url('modal/popup/purchase_order/step_sign_digital/'.$po['id']); ?>', 'Signer le Bon')" 
+            class="btn btn-primary">
+        <i class="mdi mdi-pen"></i> Signer le BC
+    </button>
                     <div class="dropdown">
                         <button type="button" class="btn btn-sm btn-light dropdown-toggle arrow-none" data-bs-toggle="dropdown"><i class="mdi mdi-dots-vertical"></i></button>
                         <div class="dropdown-menu dropdown-menu-end">

@@ -9,9 +9,6 @@
     $this->db->join('users', 'users.id = purchase_orders.requested_by', 'left');
     $this->db->join('sites', 'sites.id = purchase_orders.site_id', 'left');
     
-    // FILTRAGE : 
-    // - Storekeeper et SiteManager ne voient que leur site.
-    // - GM, Procurement, DAF et Accountant voient TOUT (tous les sites).
     if(in_array($user_type, ['storekeeper', 'sitemanager'])) {
         if (!empty($session_site_id)) {
             $this->db->where('purchase_orders.site_id', $session_site_id);
@@ -21,7 +18,6 @@
     $this->db->order_by('purchase_orders.id', 'DESC');
     $purchase_orders = $this->db->get()->result_array();
 
-    // Mapping des étapes pour éviter l'erreur "Undefined Index"
     $steps = [
         1 => ['lbl' => 'Draft', 'class' => 'badge-secondary-lighten', 'next' => 2],
         2 => ['lbl' => 'Site Approved', 'class' => 'badge-info-lighten', 'next' => 3],
@@ -33,16 +29,13 @@
     ];
 ?>
 
-<!-- Debug Info (Optionnel : Décommentez pour voir les IDs en cas de problème) -->
-<!-- <small>Role: <?php echo $user_type; ?> | Site ID: <?php echo $session_site_id; ?></small> -->
-
 <table id="basic-datatable" class="table table-striped dt-responsive nowrap" width="100%">
     <thead>
         <tr>
             <th><?php echo get_phrase('po_code'); ?></th>
             <th><?php echo get_phrase('project_/_site'); ?></th>
             <th><?php echo get_phrase('status'); ?></th>
-            <th><?php echo get_phrase('options'); ?></th>
+            <th class="text-center"><?php echo get_phrase('options'); ?></th>
         </tr>
     </thead>
     <tbody>
@@ -63,37 +56,37 @@
                 </td>
                 <td>
                     <span class="badge <?php echo $current_step['class']; ?>">
-                        <?php echo get_phrase($current_step['lbl']); ?> (<?php echo $status; ?>/7)
+                        <?php echo get_phrase($current_step['lbl']); ?>
                     </span>
                 </td>
-                <td>
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-sm btn-light dropdown-toggle arrow-none" data-bs-toggle="dropdown"><i class="mdi mdi-dots-vertical"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            
-                            <!-- DÉTAILS -->
-                            <a class="dropdown-item" href="javascript:void(0);" onclick="rightModal('<?php echo site_url('modal/popup/purchase_order/details/'.$po['id']); ?>', '<?php echo get_phrase('po_details'); ?>')">
-                                <i class="mdi mdi-information-outline"></i> <?php echo get_phrase('view_details'); ?>
-                            </a>
+                <td class="text-center">
+                    <!-- BOUTON DÉTAILS DIRECT (PLUS BESOIN DE CLIQUER SUR LES 3 POINTS) -->
+                    <button type="button" class="btn btn-sm btn-outline-info" 
+                            onclick="rightModal('<?php echo site_url('modal/popup/purchase_order/details/'.$po['id']); ?>', '<?php echo get_phrase('po_details'); ?>')"
+                            title="<?php echo get_phrase('view_details'); ?>">
+                        <i class="mdi mdi-information-outline"></i> <?php echo get_phrase('details'); ?>
+                    </button>
 
-                            <div class="dropdown-divider"></div>
+                    <!-- MENU ACTIONS DYNAMIQUES (POUR LES AUTRES RÔLES / ÉTAPES) -->
+                    <?php 
+                        $can_action = false;
+                        $next_status = $current_step['next'];
 
-                            <!-- ACTIONS DYNAMIQUES AVEC SCAN OBLIGATOIRE -->
-                            <?php 
-                                $can_action = false;
-                                $next_status = $current_step['next'];
+                        if($user_type == 'sitemanager' && $status == 1) $can_action = true;
+                        if($user_type == 'procurement' && $status == 2) $can_action = true;
+                        if($user_type == 'gm' && $status == 3) $can_action = true;
+                        if($user_type == 'purchasingagent' && $status == 4) $can_action = true;
+                        if($user_type == 'gm' && $status == 5) $can_action = true;
+                        if(in_array($user_type, ['accountant', 'daf']) && $status == 6) $can_action = true;
 
-                                // Définir qui peut faire quoi
-                                if($user_type == 'sitemanager' && $status == 1) $can_action = true;
-                                if($user_type == 'procurement' && $status == 2) $can_action = true;
-                                if($user_type == 'gm' && $status == 3) $can_action = true;
-                                if($user_type == 'purchasingagent' && $status == 4) $can_action = true;
-                                if($user_type == 'gm' && $status == 5) $can_action = true;
-                                if(in_array($user_type, ['accountant', 'daf']) && $status == 6) $can_action = true;
-
-                                if($can_action && $next_status):
-                            ?>
-                                <?php if($next_status == 7): // L'archivage est le seul sans document obligatoire ?>
+                        if($can_action && $next_status):
+                    ?>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-light dropdown-toggle arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="mdi mdi-dots-vertical"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <?php if($next_status == 7): ?>
                                     <a class="dropdown-item text-success" href="javascript:void(0);" onclick="confirmModal('<?php echo site_url($user_type.'/purchase_order/update_status/'.$po['id'].'/7'); ?>', showAllPurchaseOrders)">
                                         <i class="mdi mdi-archive"></i> <?php echo get_phrase('archive_now'); ?>
                                     </a>
@@ -102,9 +95,9 @@
                                         <i class="mdi mdi-file-upload"></i> <?php echo get_phrase('upload_&_approve'); ?>
                                     </a>
                                 <?php endif; ?>
-                            <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
+                    <?php endif; ?>
                 </td>
             </tr>
         <?php endforeach; ?>

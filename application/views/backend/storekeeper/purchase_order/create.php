@@ -15,20 +15,27 @@
     <hr>
     <h5><?php echo get_phrase('order_items'); ?></h5>
     <div id="item_list">
-        <div class="row item_row mb-2">
-            <div class="col-md-8">
-                <select name="inventory_id[]" class="form-control" required>
-                    <option value=""><?php echo get_phrase('select_product'); ?></option>
+        <div class="row item_row mb-2 border-bottom pb-2">
+            <div class="col-md-5">
+                <label class="small"><?php echo get_phrase('select_from_inventory'); ?></label>
+                <select name="inventory_id[]" class="form-control select2-inventory">
+                    <option value=""><?php echo get_phrase('not_in_inventory'); ?></option>
                     <?php $items = $this->db->get('inventory')->result_array(); 
                           foreach($items as $i): ?>
                         <option value="<?php echo $i['id']; ?>"><?php echo $i['name']; ?> (<?php echo $i['sku']; ?>)</option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
+                <label class="small"><?php echo get_phrase('or_type_custom_item_name'); ?></label>
+                <input type="text" name="custom_item_name[]" class="form-control" placeholder="Nom de l'article">
+            </div>
+            <div class="col-md-2">
+                <label class="small"><?php echo get_phrase('qty'); ?></label>
                 <input type="number" name="quantity[]" class="form-control" placeholder="Qty" min="1" required>
             </div>
             <div class="col-md-1">
+                <label class="small">&nbsp;</label><br>
                 <button type="button" class="btn btn-success btn-sm" onclick="appendItem()">+</button>
             </div>
         </div>
@@ -38,11 +45,19 @@
 </form>
 
 <script>
-$(document).ready(function() { $('select.select2').select2({ dropdownParent: '#right-modal' }); });
+$(document).ready(function() { 
+    initSelect2();
+});
+
+function initSelect2() {
+    $('select.select2').select2({ dropdownParent: '#right-modal' });
+}
 
 function appendItem() {
     var html = $('.item_row:first').clone();
     html.find('input').val('');
+    html.find('.select2-container').remove(); // Supprimer le select2 cloné qui bug
+    html.find('select').removeClass('select2-hidden-accessible').removeAttr('data-select2-id').show(); 
     html.find('button').removeClass('btn-success').addClass('btn-danger').text('-').attr('onclick', '$(this).parent().parent().remove()');
     $('#item_list').append(html);
 }
