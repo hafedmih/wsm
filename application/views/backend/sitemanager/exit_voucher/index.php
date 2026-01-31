@@ -22,22 +22,24 @@
 
 <script>
 var showAllVouchers = function () {
-    // On détermine l'URL selon le rôle connecté
-    var url = '<?php echo site_url($this->session->userdata('user_type').'/exit_voucher/list'); ?>';
-    
+    // On récupère le filtre depuis un champ caché ou l'URL
+    var status = $('#status_filter_input').val(); 
+    var url = '<?php echo site_url('sitemanager/exit_voucher/list/'); ?>' + status;
+
     $.ajax({
         type : 'GET',
         url: url,
         success : function(response) {
-            // 1. On remplace le contenu
             $('.voucher_content').html(response);
-            
-            // 2. IMPORTANT: On réinitialise la DataTable pour que la recherche et pagination refonctionnent
-            if ($.fn.DataTable.isDataTable('#basic-datatable')) {
-                $('#basic-datatable').DataTable().destroy();
-            }
-            initDataTable('basic-datatable'); 
+            initDataTable('basic-datatable');
         }
     });
 }
+
+$(document).ready(function() {
+    showAllVouchers();
+});
 </script>
+
+<!-- Champ caché pour stocker le statut initial (all ou pending) -->
+<input type="hidden" id="status_filter_input" value="<?php echo (isset($status_filter)) ? $status_filter : 'all'; ?>">

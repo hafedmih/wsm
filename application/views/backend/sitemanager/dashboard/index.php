@@ -107,6 +107,24 @@
             </div>
         </div>
     </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card widget-flat bg-info text-white shadow-sm">
+            <div class="card-body">
+                <div class="float-end">
+                    <i class="mdi mdi-clipboard-check-outline widget-icon bg-white text-info"></i>
+                </div>
+                <h5 class="fw-normal mt-0" title="<?php echo get_phrase('pending_vouchers'); ?>">
+                    <?php echo get_phrase('vouchers_waiting_approval'); ?>
+                </h5>
+                <h3 class="mt-3 mb-3"><?php echo $pending_vouchers_count; ?></h3>
+                <p class="mb-0">
+                    <a href="<?php echo site_url('sitemanager/exit_voucher/pending'); ?>" class="text-white">
+                        <i class="mdi mdi-arrow-right-circle"></i> <?php echo get_phrase('review_and_approve_now'); ?>
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
     
     <!-- Vous pouvez ajouter d'autres cartes ici (ex: Stock bas, Maintenance) -->
 </div>

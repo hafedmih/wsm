@@ -1,22 +1,26 @@
 <?php
-    $user_role = $this->session->userdata('user_type');
+    // FORCE la définition de la variable au début du fichier
+    $user_role = $this->session->userdata('user_type'); 
     $site_id   = $this->session->userdata('site_id');
-
-    // Requête corrigée avec LEFT JOIN
-    $this->db->select('exit_vouchers.*, projects.name as project_name, users.name as creator_name, assets.name as asset_name');
-    $this->db->from('exit_vouchers');
     
-    // Jointures GAUCHE (LEFT JOIN) pour ne pas perdre de données
+    // Récupération du filtre de statut passé par le contrôleur
+    $status_to_show = (isset($selected_status)) ? $selected_status : 'all';
+
+    $this->db->select('exit_vouchers.*, projects.name as project_name, users.name as creator_name');
+    $this->db->from('exit_vouchers');
     $this->db->join('projects', 'projects.id = exit_vouchers.project_id', 'left');
     $this->db->join('users', 'users.id = exit_vouchers.requested_by', 'left');
-    $this->db->join('assets', 'assets.id = exit_vouchers.asset_id', 'left');
-    
-    // Filtrage par site
     $this->db->where('exit_vouchers.site_id', $site_id);
+
+    if ($status_to_show == 'pending') {
+        $this->db->where('exit_vouchers.status', 'pending');
+    }
+
     $this->db->order_by('exit_vouchers.id', 'DESC');
-    
     $vouchers = $this->db->get()->result_array();
 ?>
+
+<!-- Le reste de votre code de tableau (Line 73 utilisera maintenant $user_role sans erreur) -->
 
 <table id="basic-datatable" class="table table-striped dt-responsive nowrap" width="100%">
     <thead>

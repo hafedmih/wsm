@@ -41,6 +41,10 @@ public function dashboard() {
     }
     $page_data['active_projects'] = $this->db->get('projects')->result_array();
      $page_data['pending_po_count'] = $this->crud_model->get_pending_tasks_count();
+     $page_data['pending_vouchers_count'] = $this->db->get_where('exit_vouchers', array(
+        'site_id' => $current_site_id,
+        'status'  => 'pending'
+    ))->num_rows();
 
     $page_data['page_title'] = 'Dashboard';
     $page_data['folder_name'] = 'dashboard';
@@ -95,18 +99,32 @@ public function project($param1 = '', $param2 = '') {
     }
 }
 public function exit_voucher($param1 = '', $param2 = '') {
+    
+    // 1. Actions AJAX (Approbation)
     if ($param1 == 'approve') {
         echo $this->crud_model->exit_voucher_approve($param2);
+        return; // Arrêter l'exécution ici
     }
-    elseif ($param1 == 'list') {
-        $this->load->view('backend/sitemanager/exit_voucher/list');
+
+    // 2. Chargement de la liste via AJAX
+    if ($param1 == 'list') {
+        $page_data['selected_status'] = $param2; 
+        // IMPORTANT : Passez $page_data pour que list.php reçoive 'selected_status'
+        $this->load->view('backend/sitemanager/exit_voucher/list', $page_data);
+        return; // Arrêter l'exécution ici
     }
-    elseif (empty($param1)) {
-        $page_data['folder_name'] = 'exit_voucher';
-        $page_data['page_title'] = 'approve_vouchers';
+
+    // 3. Affichage de la page principale (si vide OU si pending)
+    if (empty($param1) || $param1 == 'pending') {
+        $page_data['status_filter'] = ($param1 == 'pending') ? 'pending' : 'all';
+        $page_data['folder_name']   = 'exit_voucher';
+        $page_data['page_title']    = 'approve_vouchers';
+        
+        // On charge l'index global qui inclura votre index.php de dossier
         $this->load->view('backend/index', $page_data);
     }
 }
+
 public function purchase_order($param1 = '', $param2 = '') {
     if ($param1 == 'create' || $param1 == 'update_status') {
         echo $this->crud_model->manage_purchase_order($param1, $param2);

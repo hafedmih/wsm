@@ -80,18 +80,34 @@ public function project($param1 = '', $param2 = '') {
     }
 }
 public function exit_voucher($param1 = '', $param2 = '') {
+    
+    // 1. Action AJAX : Approbation par le GM
     if ($param1 == 'approve') {
         echo $this->crud_model->exit_voucher_approve($param2);
+        return; // Arrête l'exécution pour renvoyer uniquement le JSON
     }
-    elseif ($param1 == 'list') {
-        $this->load->view('backend/gm/exit_voucher/list');
+
+    // 2. Action AJAX : Chargement de la liste HTML
+    if ($param1 == 'list') {
+        // $param2 contient le statut (all ou pending)
+        $page_data['selected_status'] = $param2; 
+        // On charge la vue list spécifique au GM
+        $this->load->view('backend/gm/exit_voucher/list', $page_data);
+        return; // Arrête l'exécution pour renvoyer uniquement le HTML de la liste
     }
-    elseif (empty($param1)) {
-        $page_data['folder_name'] = 'exit_voucher';
-        $page_data['page_title'] = 'approve_vouchers';
+
+    // 3. Navigation initiale (via Menu ou via Dashboard "pending")
+    if (empty($param1) || $param1 == 'pending') {
+        // Si l'URL est /gm/exit_voucher/pending, on active le filtre
+        $page_data['status_filter'] = ($param1 == 'pending') ? 'pending' : 'all';
+        $page_data['folder_name']   = 'exit_voucher';
+        $page_data['page_title']    = 'manage_exit_vouchers';
+        
+        // On charge le template global qui inclura views/backend/gm/exit_voucher/index.php
         $this->load->view('backend/index', $page_data);
     }
 }
+
 public function purchase_order($param1 = '', $param2 = '') {
     if ($param1 == 'create' || $param1 == 'update_status') {
         echo $this->crud_model->manage_purchase_order($param1, $param2);

@@ -46,9 +46,7 @@
         </div>
     </div>
 
-    <div class="alert alert-warning mt-3">
-        <small><i class="mdi mdi-information"></i> Le document de demande (PDF) sera généré automatiquement après validation.</small>
-    </div>
+   
 
     <button class="btn btn-primary w-100" type="submit">Generate Exit Voucher</button>
 </form>
