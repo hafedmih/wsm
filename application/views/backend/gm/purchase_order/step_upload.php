@@ -38,7 +38,7 @@
                     
                     <?php if(!empty($user_data['signature']) && file_exists('uploads/signatures/'.$user_data['signature'])): ?>
                         <div class="p-2 d-inline-block border mb-2 shadow-sm bg-white">
-                            <img src="<?php echo base_url('uploads/signatures/'.$user_data['signature']); ?>" style="max-height: 120px; width: auto;">
+                            <img src="<?php echo base_url('uploads/signatures/'.$user_data['signature']); ?>" style="max-height: 120px; width: 120px;">
                         </div>
                         <p class="text-success small mb-0 fw-bold">
                             <i class="mdi mdi-check-decagram"></i> <?php echo $user_data['name']; ?><br>
@@ -55,10 +55,10 @@
                     <?php endif; ?>
                 </div>
                 
-                <div class="form-group mb-3">
+<!--                <div class="form-group mb-3">
                     <label><?php echo get_phrase('additional_scan_optional'); ?></label>
                     <input type="file" name="po_document" class="form-control" accept="image/*,application/pdf">
-                </div>
+                </div>-->
 
             <!-- CAS ÉTAPE 6 : PAIEMENT (MÉTHODE + IMAGE) -->
             <?php elseif($next_status == 6):

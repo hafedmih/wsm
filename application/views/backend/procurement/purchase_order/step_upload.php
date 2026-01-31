@@ -39,7 +39,7 @@
                     
                     <?php if(!empty($user_data['signature']) && file_exists('uploads/signatures/'.$user_data['signature'])): ?>
                         <div class="p-2 d-inline-block border mb-2 shadow-sm">
-                            <img src="<?php echo base_url('uploads/signatures/'.$user_data['signature']); ?>" style="max-height: 100px; width: auto;">
+                            <img src="<?php echo base_url('uploads/signatures/'.$user_data['signature']); ?>" style="max-height: 100px; width: 100px;">
                         </div>
                         <p class="text-success small mb-0">
                             <i class="mdi mdi-check-decagram"></i> 
@@ -57,10 +57,10 @@
                 </div>
 
                 <!-- Document additionnel (optionnel pour signature numérique) -->
-                <div class="form-group mb-3">
+<!--                <div class="form-group mb-3">
                     <label><?php echo get_phrase('attach_extra_scan_/_document_optional'); ?></label>
                     <input type="file" name="po_document" class="form-control" accept="image/*,application/pdf">
-                </div>
+                </div>-->
 
             <?php else: ?>
                 <!-- ÉTAPES 5 & 6 : DOCUMENTS OBLIGATOIRES (FACTURE / PAIEMENT) -->

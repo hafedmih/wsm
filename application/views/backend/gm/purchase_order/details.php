@@ -13,7 +13,7 @@
     $this->db->where('purchase_orders.id', $po_id);
     $po = $this->db->get()->row_array();
 
-    // 2. Articles commandés (MISE À JOUR : LEFT JOIN pour supporter les produits personnalisés)
+    // 2. Articles commandés
     $this->db->select('purchase_order_items.*, inventory.name as inventory_name, inventory.sku, inventory.unit');
     $this->db->from('purchase_order_items');
     $this->db->join('inventory', 'inventory.id = purchase_order_items.inventory_id', 'left');
@@ -44,7 +44,6 @@
                 </h5>
                 
                 <div class="row">
-                    <!-- BLOC 1 : Détails du Projet -->
                     <div class="col-md-4 border-end">
                         <p class="text-muted mb-1 font-13"><?php echo get_phrase('project_details'); ?></p>
                         <p class="mb-1"><strong><?php echo get_phrase('po_code'); ?> :</strong> <span class="badge badge-dark-lighten"><?php echo $po['code']; ?></span></p>
@@ -52,7 +51,6 @@
                         <p class="mb-1"><strong><?php echo get_phrase('site'); ?> :</strong> <br><?php echo $po['site_name']; ?></p>
                     </div>
 
-                    <!-- BLOC 2 : Détails du Fournisseur -->
                     <div class="col-md-4 border-end">
                         <p class="text-muted mb-1 font-13"><?php echo get_phrase('supplier_details'); ?></p>
                         <p class="mb-1"><strong><?php echo get_phrase('name'); ?> :</strong> <br><?php echo !empty($po['supplier_name']) ? $po['supplier_name'] : '---'; ?></p>
@@ -65,14 +63,11 @@
                                 foreach($tags as $t): ?>
                                     <span class="badge badge-outline-secondary"><?php echo trim($t); ?></span>
                                 <?php endforeach; 
-                            else:
-                                echo '<small class="text-muted italic">'.get_phrase('not_specified').'</small>';
                             endif;
                             ?>
                         </div>
                     </div>
 
-                    <!-- BLOC 3 : Finance & Paiement -->
                     <div class="col-md-4">
                         <p class="text-muted mb-1 font-13"><?php echo get_phrase('financial_summary'); ?></p>
                         <p class="mb-2">
@@ -81,7 +76,6 @@
                                 <?php echo number_format($po['total_amount'], 2); ?> MRU
                             </span>
                         </p>
-                        
                         <p class="mb-1"><strong><?php echo get_phrase('payment_status'); ?> :</strong><br>
                             <?php if($po['status'] >= 6): ?>
                                 <span class="text-success fw-bold"><i class="mdi mdi-check-decagram"></i> <?php echo get_phrase('paid_via'); ?> : <?php echo $po['payment_method']; ?></span>
@@ -128,9 +122,16 @@
                     <?php if($is_done): ?>
                         <small class="text-muted">
                             <?php 
-                                if($step_num == 1) echo $po['requester_name'].' ('.ucfirst($po['requester_role']).') | '.date('d M Y, H:i', strtotime($po['created_at'])); 
-                                elseif($step_doc) echo $step_doc['uploader_name'].' ('.ucfirst($step_doc['uploader_role']).') | '.date('d M Y, H:i', strtotime($step_doc['created_at']));
-                                else echo get_phrase('system_validated');
+                                if($step_num == 1) {
+                                    echo $po['requester_name'].' ('.ucwords($po['requester_role']).') | '.date('d M Y, H:i', strtotime($po['created_at'])); 
+                                } elseif($step_num == 7) {
+                                    // MISE À JOUR : Affiche la date d'archivage
+                                    echo get_phrase('archived_on').': '.date('d M Y, H:i', strtotime($po['updated_at']));
+                                } elseif($step_doc) {
+                                    echo $step_doc['uploader_name'].' ('.ucwords($step_doc['uploader_role']).') | '.date('d M Y, H:i', strtotime($step_doc['created_at']));
+                                } else {
+                                    echo get_phrase('validated');
+                                }
                             ?>
                         </small>
                         <?php if($step_doc): ?>
@@ -145,7 +146,7 @@
         </div>
     </div>
 
-    <!-- SECTION 3 : LISTE DES ARTICLES (MISE À JOUR PRODUITS PERSONNALISÉS) -->
+    <!-- SECTION 3 : LISTE DES ARTICLES -->
     <div class="col-12 mb-3">
         <div class="card border shadow-none">
             <div class="card-body">
@@ -164,18 +165,11 @@
                         <tbody>
                             <?php foreach($items as $i): ?>
                             <tr>
-                                <td>
-                                    <small class="text-muted">
-                                        <?php echo !empty($i['sku']) ? $i['sku'] : 'N/A'; ?>
-                                    </small>
-                                </td>
+                                <td><small class="text-muted"><?php echo !empty($i['sku']) ? $i['sku'] : 'N/A'; ?></small></td>
                                 <td>
                                     <?php 
-                                        if(!empty($i['inventory_id'])) {
-                                            echo $i['inventory_name']; 
-                                        } else {
-                                            echo '<strong>' . $i['custom_item_name'] . '</strong> <span class="badge badge-info-lighten">' . get_phrase('custom_item') . '</span>';
-                                        }
+                                        if(!empty($i['inventory_id'])) echo $i['inventory_name']; 
+                                        else echo '<strong>' . $i['custom_item_name'] . '</strong> <span class="badge badge-info-lighten">' . get_phrase('custom_item') . '</span>';
                                     ?>
                                 </td>
                                 <td class="text-center"><strong><?php echo (int)$i['quantity']; ?></strong> <?php echo !empty($i['unit']) ? $i['unit'] : ''; ?></td>
@@ -196,26 +190,39 @@
         </div>
     </div>
 
-    <!-- SECTION 4 : DOCUMENTS & PIÈCES JOINTES -->
+    <!-- SECTION 4 : DOCUMENTS & PIÈCES JOINTES (EXCLURE COMPTABLE) -->
     <div class="col-12">
         <div class="card border shadow-none">
             <div class="card-body">
-                <h5 class="header-title text-danger mb-3"><i class="mdi mdi-folder-image"></i> <?php echo get_phrase('all_attached_files'); ?></h5>
+                <h5 class="header-title text-danger mb-3"><i class="mdi mdi-folder-image"></i> <?php echo get_phrase('operational_attached_files'); ?></h5>
                 <div class="row">
-                    <?php foreach($docs as $d): 
+                    <?php 
+                    $displayed_paths = []; 
+                    foreach($docs as $d): 
+                        // MISE À JOUR : Exclure les documents du comptable pour le GM
+                        if($d['uploader_role'] == 'accountant') continue;
+
+                        if (in_array($d['file_path'], $displayed_paths)) continue;
+                        $displayed_paths[] = $d['file_path'];
+
                         $ext = strtolower(pathinfo($d['file_name'], PATHINFO_EXTENSION));
                         $is_image = in_array($ext, ['jpg', 'jpeg', 'png', 'gif']);
                     ?>
                     <div class="col-12 mb-4 border-bottom pb-3">
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="badge badge-dark"><?php echo strtoupper(str_replace('_', ' ', $d['doc_type'])); ?></span>
-                            <small class="text-muted"><?php echo $d['uploader_name']; ?> (<?php echo ucfirst($d['uploader_role']); ?>)</small>
+                            <span class="badge badge-dark">
+                                <?php 
+                                    if(strpos($d['doc_type'], 'signed_doc') !== false || $d['doc_type'] == 'step1_request') echo get_phrase('official_purchase_order_pdf'); 
+                                    else echo strtoupper(str_replace('_', ' ', $d['doc_type'])); 
+                                ?>
+                            </span>
+                            <small class="text-muted"><?php echo get_phrase('uploaded_by'); ?>: <?php echo $d['uploader_name']; ?> (<?php echo ucfirst($d['uploader_role']); ?>)</small>
                         </div>
                         
                         <?php if($is_image): ?>
                             <div class="text-center bg-light p-2 rounded">
                                 <a href="<?php echo base_url($d['file_path']); ?>" target="_blank">
-                                    <img src="<?php echo base_url($d['file_path']); ?>" class="img-fluid rounded border shadow-sm" style="max-height: 500px;">
+                                    <img src="<?php echo base_url($d['file_path']); ?>?v=<?php echo time(); ?>" class="img-fluid rounded border shadow-sm" style="max-height: 500px;">
                                 </a>
                             </div>
                         <?php else: ?>
@@ -225,16 +232,15 @@
                             </div>
                         <?php endif; ?>
                         
-                        <a href="<?php echo base_url($d['file_path']); ?>" download class="btn btn-secondary btn-sm w-100 mt-2">
+                        <a href="<?php echo base_url($d['file_path']); ?>?v=<?php echo time(); ?>" download class="btn btn-secondary btn-sm w-100 mt-2">
                             <i class="mdi mdi-download"></i> <?php echo get_phrase('download'); ?>
                         </a>
                     </div>
                     <?php endforeach; ?>
 
-                    <?php if(count($docs) == 0): ?>
+                    <?php if(count($displayed_paths) == 0): ?>
                         <div class="col-12 text-center py-3 text-muted">
-                            <i class="mdi mdi-folder-open-outline d-block" style="font-size: 40px;"></i>
-                            <p><?php echo get_phrase('no_documents_uploaded_yet'); ?></p>
+                            <p><?php echo get_phrase('no_operational_files_uploaded'); ?></p>
                         </div>
                     <?php endif; ?>
                 </div>

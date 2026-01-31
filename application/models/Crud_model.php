@@ -614,6 +614,15 @@ public function manage_purchase_order($param1 = '', $param2 = '') {
                     $this->db->update('stocks');
                 }
             }
+              $archive_log = [
+        'purchase_order_id' => $po_id,
+        'file_name'         => 'N/A', // Pas de fichier
+        'file_path'         => 'N/A',
+        'doc_type'          => 'archived_log',
+        'uploaded_by'       => $this->session->userdata('user_id'),
+        'created_at'        => date('Y-m-d H:i:s')
+    ];
+    $this->db->insert('purchase_order_docs', $archive_log);
         }
         
         // Gestion des documents (Upload manuel ou Signature Automatique)
@@ -666,7 +675,7 @@ private function generate_po_document($po_id, $doc_type) {
     // ou si vous voulez un seul enregistrement par PO, utilisez un type générique
     $check_doc = $this->db->get_where('purchase_order_docs', [
         'purchase_order_id' => $po_id, 
-        //'doc_type' => $doc_type 
+        'doc_type' => $doc_type 
     ]);
 
     $doc_data = [
@@ -687,6 +696,7 @@ private function generate_po_document($po_id, $doc_type) {
         $this->db->insert('purchase_order_docs', $doc_data);
     }
 }
+
 public function get_pending_tasks_count() {
     $user_type = strtolower($this->session->userdata('user_type'));
     $site_id   = $this->session->userdata('site_id');

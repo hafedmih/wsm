@@ -34,7 +34,7 @@
                     <p class="mb-2 text-muted"><strong><?php echo get_phrase('your_digital_signature_from_profile'); ?></strong></p>
                     <?php if(!empty($user_data['signature']) && file_exists('uploads/signatures/'.$user_data['signature'])): ?>
                         <div class="bg-white p-2 d-inline-block border mb-2">
-                            <img src="<?php echo base_url('uploads/signatures/'.$user_data['signature']); ?>" style="max-height: 100px; width: auto;">
+                            <img src="<?php echo base_url('uploads/signatures/'.$user_data['signature']); ?>" style="max-height: 100px; width: 100px;">
                         </div>
                         <p class="text-success small mb-0">
                             <i class="mdi mdi-check-circle"></i> <?php echo $user_data['name']; ?><br>
@@ -48,10 +48,10 @@
                     <?php endif; ?>
                 </div>
 
-                <div class="form-group mb-3">
+<!--                <div class="form-group mb-3">
                     <label><?php echo get_phrase('attach_extra_document_optional'); ?></label>
                     <input type="file" name="po_document" class="form-control" accept="image/*,application/pdf">
-                </div>
+                </div>-->
 
             <?php else: ?>
                 <!-- ÉTAPES 5 & 6 : FACTURE ET PAIEMENT (DOC OBLIGATOIRE) -->
