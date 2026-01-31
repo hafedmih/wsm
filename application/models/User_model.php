@@ -1830,4 +1830,5 @@ public function ministry_delete($id)
         'notification' => get_phrase('ministry_deleted_successfully')
     ]);
 }
+
 }

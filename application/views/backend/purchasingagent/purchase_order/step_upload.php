@@ -48,11 +48,17 @@
             <table class="table table-sm">
                 <?php 
                 $items = $this->db->select('purchase_order_items.*, inventory.name')
-                                  ->join('inventory', 'inventory.id = purchase_order_items.inventory_id')
+                                  ->join('inventory', 'inventory.id = purchase_order_items.inventory_id','left')
                                   ->get_where('purchase_order_items', ['purchase_order_id' => $po_id])->result_array();
                 foreach($items as $item): ?>
                 <tr>
-                    <td><?php echo $item['name']; ?> (x<?php echo $item['quantity']; ?>)</td>
+                    <td><?php  if(!empty($item['inventory_id'])) {
+                                            echo $item['name']; 
+                                        } else {
+                                            echo '<strong>' . $item['custom_item_name'] . '</strong> <span class="badge badge-info-lighten">' . get_phrase('custom') . '</span>';
+                                        }
+                                        //echo $item['name'];
+                                        ?> (x<?php echo $item['quantity']; ?>)</td>
                     <td>
                         <input type="hidden" name="item_ids[]" value="<?php echo $item['id']; ?>">
                         <input type="number" step="0.01" name="unit_prices[]" class="form-control" placeholder="Prix Unitaire" required>

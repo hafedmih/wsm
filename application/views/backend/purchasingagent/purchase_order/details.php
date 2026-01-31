@@ -14,10 +14,12 @@
     $po = $this->db->get()->row_array();
 
     // 2. Articles commandés
-    $items = $this->db->select('purchase_order_items.*, inventory.name, inventory.sku, inventory.unit')
-                      ->join('inventory', 'inventory.id = purchase_order_items.inventory_id')
-                      ->get_where('purchase_order_items', ['purchase_order_id' => $po_id])->result_array();
-
+      $this->db->select('purchase_order_items.*, inventory.name as inventory_name, inventory.sku, inventory.unit');
+    $this->db->from('purchase_order_items');
+    $this->db->join('inventory', 'inventory.id = purchase_order_items.inventory_id', 'left');
+    $this->db->where('purchase_order_items.purchase_order_id', $po_id);
+    $items = $this->db->get()->result_array();
+    
     // 3. Documents du Workflow avec infos uploader
     $docs = $this->db->select('purchase_order_docs.*, users.name as uploader_name, users.role as uploader_role')
                      ->join('users', 'users.id = purchase_order_docs.uploaded_by')
@@ -116,14 +118,24 @@
                                 <th><?php echo get_phrase('sku'); ?></th>
                                 <th><?php echo get_phrase('product'); ?></th>
                                 <th class="text-center"><?php echo get_phrase('qty'); ?></th>
+                                <th class="text-end"><?php echo get_phrase('unit_price'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach($items as $i): ?>
                             <tr>
-                                <td><small><?php echo $i['sku']; ?></small></td>
-                                <td><?php echo $i['name']; ?></td>
+                                <td><small><?php echo !empty($i['sku']) ? $i['sku'] : '<span class="text-muted">N/A</span>'; ?></small></td>
+                                <td>
+                                    <?php 
+                                        if(!empty($i['inventory_id'])) {
+                                            echo $i['inventory_name']; 
+                                        } else {
+                                            echo '<strong>' . $i['custom_item_name'] . '</strong> <span class="badge badge-info-lighten">' . get_phrase('custom') . '</span>';
+                                        }
+                                    ?>
+                                </td>
                                 <td class="text-center"><strong><?php echo (int)$i['quantity']; ?></strong> <?php echo $i['unit']; ?></td>
+                                <td class="text-end"><?php echo number_format($i['unit_price'], 2); ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>

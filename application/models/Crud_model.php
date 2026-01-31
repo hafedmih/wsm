@@ -623,6 +623,11 @@ public function manage_purchase_order($param1 = '', $param2 = '') {
 
         $this->db->where('id', $po_id);
         $this->db->update('purchase_orders', $update_data);
+         if (in_array($new_status, [2, 3, 4])) {
+            $doc_type = $this->input->post('doc_type');
+            // On régénère le document PDF qui inclura toutes les signatures jusqu'à cette étape
+            $this->generate_po_document($po_id, $doc_type);
+        }
         
         return json_encode(['status' => true, 'notification' => get_phrase('po_status_updated')]);
     }
@@ -635,35 +640,53 @@ private function generate_po_document($po_id, $doc_type) {
     $this->load->library('pdf');
     $user_id = $this->session->userdata('user_id');
     
-    // Récupération des données pour le PDF
-    $page_data['po_id']    = $po_id;
-    $page_data['user']     = $this->db->get_where('users', ['id' => $user_id])->row_array();
+    // RÉCUPÉRATION DES DONNÉES DU PO (Indispensable pour corriger l'erreur)
+    $po = $this->db->get_where('purchase_orders', ['id' => $po_id])->row_array();
     
-    // Charge la vue HTML du template PDF
+    // Préparation des données pour la vue
+    $page_data['po_id'] = $po_id;
+    $page_data['po']    = $po; // <-- Correction de l'erreur "Undefined variable: po"
+    $page_data['user']  = $this->db->get_where('users', ['id' => $user_id])->row_array();
+    
+    // Charge la vue HTML
     $html = $this->load->view('backend/storekeeper/purchase_order/pdf_template', $page_data, true);
     
-    $file_name = $doc_type . '_' . $po_id . '_' . time() . '.pdf';
+    // NOM DU FICHIER FIXE (Pour remplacer le document au lieu d'en créer un nouveau)
+    $file_name = 'PO_' . $po_id . '_Final_Document.pdf';
     $file_path = 'uploads/po/' . $file_name;
 
-    // Création du dossier si inexistant
     if (!is_dir('uploads/po')) mkdir('uploads/po', 0777, true);
 
-    // Génération du PDF
+    // Génération et ÉCRASEMENT du fichier existant
     $this->pdf->load_html($html);
     $this->pdf->render();
     file_put_contents($file_path, $this->pdf->output());
 
-    // Enregistrement dans la table des documents
+    // Vérifier si une entrée existe déjà dans purchase_order_docs pour ce type
+    // ou si vous voulez un seul enregistrement par PO, utilisez un type générique
+    $check_doc = $this->db->get_where('purchase_order_docs', [
+        'purchase_order_id' => $po_id, 
+        //'doc_type' => $doc_type 
+    ]);
+
     $doc_data = [
         'purchase_order_id' => $po_id,
         'file_name'         => $file_name,
         'file_path'         => $file_path,
         'doc_type'          => $doc_type,
-        'uploaded_by'       => $user_id
+        'uploaded_by'       => $user_id,
+        'created_at'        => date('Y-m-d H:i:s')
     ];
-    $this->db->insert('purchase_order_docs', $doc_data);
-}
 
+    if ($check_doc->num_rows() > 0) {
+        // On met à jour l'enregistrement existant
+        $this->db->where('id', $check_doc->row()->id);
+        $this->db->update('purchase_order_docs', $doc_data);
+    } else {
+        // On insère si c'est la première fois
+        $this->db->insert('purchase_order_docs', $doc_data);
+    }
+}
 public function get_pending_tasks_count() {
     $user_type = strtolower($this->session->userdata('user_type'));
     $site_id   = $this->session->userdata('site_id');
@@ -716,6 +739,51 @@ public function add_signature($po_id) {
     $this->db->update('purchase_orders', [$column => $file_path, 'status' => $status]);
 
     return json_encode(['status' => true]);
+}
+/**
+ * Gère l'upload physique des documents liés au workflow Purchase Order
+ */
+private function upload_po_file($po_id) {
+    if (!empty($_FILES['po_document']['name'])) {
+        
+        $user_id = $this->session->userdata('user_id');
+        $type = $this->input->post('doc_type'); // ex: invoice_doc, payment_doc, etc.
+        
+        $file_ext = pathinfo($_FILES['po_document']['name'], PATHINFO_EXTENSION);
+        $file_name = $type . '_' . $po_id . '_' . time() . '.' . $file_ext;
+        $file_path = 'uploads/po/' . $file_name;
+        
+        // Création du dossier si inexistant
+        if (!is_dir('uploads/po')) {
+            mkdir('uploads/po', 0777, true);
+        }
+        
+        if (move_uploaded_file($_FILES['po_document']['tmp_name'], $file_path)) {
+            $doc_data = [
+                'purchase_order_id' => $po_id,
+                'file_name'         => $file_name,
+                'file_path'         => $file_path,
+                'doc_type'          => $type,
+                'uploaded_by'       => $user_id,
+                'created_at'        => date('Y-m-d H:i:s')
+            ];
+
+            // Vérifier si un document du même type existe déjà pour ce PO (on le remplace)
+            $check = $this->db->get_where('purchase_order_docs', [
+                'purchase_order_id' => $po_id, 
+                'doc_type' => $type
+            ]);
+
+            if ($check->num_rows() > 0) {
+                $this->db->where('id', $check->row()->id);
+                $this->db->update('purchase_order_docs', $doc_data);
+            } else {
+                $this->db->insert('purchase_order_docs', $doc_data);
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
         }
