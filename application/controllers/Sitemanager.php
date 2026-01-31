@@ -33,24 +33,32 @@ class Sitemanager extends CI_Controller {
 
 public function dashboard() {
     $current_site_id = $this->session->userdata('site_id');
-    
-    // On ne récupère que les projets "open" pour le dashboard actif
+
+    // 1. Récupérer les projets ouverts UNIQUEMENT pour son site
     $this->db->where('status', 'open');
-    if ($this->session->userdata('user_type') != 'gm') {
-        $this->db->where('site_id', $current_site_id);
-    }
+    $this->db->where('site_id', $current_site_id);
     $page_data['active_projects'] = $this->db->get('projects')->result_array();
-     $page_data['pending_po_count'] = $this->crud_model->get_pending_tasks_count();
-     $page_data['pending_vouchers_count'] = $this->db->get_where('exit_vouchers', array(
+
+    // 2. Compter les Bons de Sortie en attente pour son site
+    $page_data['pending_vouchers_count'] = $this->db->get_where('exit_vouchers', [
         'site_id' => $current_site_id,
         'status'  => 'pending'
-    ))->num_rows();
+    ])->num_rows();
+
+    // 3. Compter les tâches globales (Bons de sortie + Projets en retard)
+    $urgent_projects = 0;
+    foreach($page_data['active_projects'] as $p) {
+        $days = (strtotime($p['deadline']) - time()) / (60 * 60 * 24);
+        if($days <= 7) $urgent_projects++;
+    }
+    $page_data['total_tasks'] = $page_data['pending_vouchers_count']+$this->crud_model->get_pending_tasks_count();
 
     $page_data['page_title'] = 'Dashboard';
     $page_data['folder_name'] = 'dashboard';
     $page_data['page_name'] = 'index';
     $this->load->view('backend/index', $page_data);
 }
+
 public function project($param1 = '', $param2 = '') {
     $current_site_id = $this->session->userdata('site_id');
 
@@ -163,4 +171,25 @@ public function profile($param1 = "", $param2 = "")
 			$this->load->view('backend/index', $page_data);
 		}
 	}
+ public function my_tasks() {
+    $current_site_id = $this->session->userdata('site_id');
+    
+    // 1. Compter les Bons de Sortie (Exit Vouchers) en attente
+    $page_data['pending_vouchers'] = $this->db->get_where('exit_vouchers', [
+        'site_id' => $current_site_id,
+        'status'  => 'pending'
+    ])->num_rows();
+
+    // 2. Compter les Bons de Commande (PO) à valider (Étape 2 du Workflow)
+    // On suppose que status = 2 correspond à la validation Site Manager
+    $page_data['pending_pos'] = $this->db->get_where('purchase_orders', [
+        'site_id' => $current_site_id,
+        'status'  => 1 
+    ])->num_rows();
+
+    $page_data['page_title'] = get_phrase('my_task_center');
+    $page_data['folder_name'] = 'tasks';
+    $page_data['page_name'] = 'index';
+    $this->load->view('backend/index', $page_data);
+}
     }
