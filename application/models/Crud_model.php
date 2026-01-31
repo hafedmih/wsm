@@ -459,10 +459,11 @@ public function stock_update($inventory_id) {
 
 // Création avec multi-articles et document
 public function exit_voucher_create() {
+    // 1. Données de base
     $data['code']         = 'BS-' . date('dmy') . '-' . rand(100, 999);
     $data['site_id']      = $this->session->userdata('site_id');
-    $data['project_id']   = htmlspecialchars($this->input->post('project_id'));
-    $data['asset_id']     = htmlspecialchars($this->input->post('asset_id'));
+    $data['project_id']   = $this->input->post('project_id');
+    $data['asset_id']     = $this->input->post('asset_id');
     $data['motive']       = htmlspecialchars($this->input->post('motive'));
     $data['requested_by'] = $this->session->userdata('user_id');
     $data['status']       = 'pending';
@@ -470,65 +471,116 @@ public function exit_voucher_create() {
     $this->db->insert('exit_vouchers', $data);
     $voucher_id = $this->db->insert_id();
 
-    // 1. Gérer les multi-articles
+    // 2. Gestion des articles et préparation des données pour le PDF
     $inventory_ids = $this->input->post('inventory_id');
     $quantities    = $this->input->post('quantity');
+    $items_for_pdf = [];
+
     foreach ($inventory_ids as $key => $id) {
-        $item_data = [
-            'voucher_id'   => $voucher_id,
-            'inventory_id' => $id,
-            'quantity'     => $quantities[$key]
-        ];
-        $this->db->insert('exit_voucher_items', $item_data);
+        if(!empty($id)){
+            $item_info = $this->db->get_where('inventory', ['id' => $id])->row_array();
+            $this->db->insert('exit_voucher_items', [
+                'voucher_id'   => $voucher_id,
+                'inventory_id' => $id,
+                'quantity'     => $quantities[$key]
+            ]);
+            $items_for_pdf[] = [
+                'name' => $item_info['name'],
+                'sku'  => $item_info['sku'],
+                'unit' => $item_info['unit'],
+                'quantity' => $quantities[$key]
+            ];
+        }
     }
 
-    // 2. Upload du document Magasinier (Facture/Demande)
-    if (!empty($_FILES['request_file']['name'])) {
-        $file_name = 'REQ_' . $voucher_id . '_' . time() . '.' . pathinfo($_FILES['request_file']['name'], PATHINFO_EXTENSION);
-        move_uploaded_file($_FILES['request_file']['tmp_name'], 'uploads/vouchers/' . $file_name);
-        
-        $this->db->insert('exit_voucher_documents', [
-            'voucher_id'  => $voucher_id,
-            'file_name'   => $file_name,
-            'file_path'   => 'uploads/vouchers/' . $file_name,
-            'uploaded_by' => $this->session->userdata('user_id'),
-            'doc_type'    => 'request_doc'
-        ]);
-    }
+    // 3. RÉCUPÉRATION DES NOMS POUR LE PDF (TRÈS IMPORTANT)
+    $project = $this->db->get_where('projects', ['id' => $data['project_id']])->row_array();
+    $pdf_data['v'] = $data;
+    $pdf_data['v']['project_name'] = ($project) ? $project['name'] : 'Usage Général';
+    
+    $site = $this->db->get_where('sites', ['id' => $data['site_id']])->row_array();
+    $pdf_data['v']['site_name'] = ($site) ? $site['name'] : 'N/A';
+    
+    $user = $this->db->get_where('users', ['id' => $data['requested_by']])->row_array();
+    $pdf_data['v']['requester_name'] = $user['name']; // On récupère le nom exact de la DB
+    $pdf_data['v']['created_at'] = date('Y-m-d H:i:s');
+    $pdf_data['items'] = $items_for_pdf;
 
-    return json_encode(['status' => true, 'notification' => get_phrase('voucher_created_successfully')]);
+    // 4. GÉNÉRATION DU PDF ET SAUVEGARDE PHYSIQUE
+    $html = $this->load->view('backend/storekeeper/exit_voucher/exit_voucher_pdf', $pdf_data, true);
+    $this->load->library('pdf');
+    $pdf_content = $this->pdf->generate($html, '', false);
+    
+    $file_name = 'BS_REQ_' . $voucher_id . '.pdf';
+    $file_path = 'uploads/vouchers/' . $file_name;
+    
+    if (!is_dir('uploads/vouchers/')) { mkdir('uploads/vouchers/', 0777, true); }
+    file_put_contents($file_path, $pdf_content);
+
+    // 5. Enregistrement du document généré
+    $this->db->insert('exit_voucher_documents', [
+        'voucher_id'  => $voucher_id,
+        'file_name'   => $file_name,
+        'file_path'   => $file_path,
+        'uploaded_by' => $data['requested_by'],
+        'doc_type'    => 'request_doc'
+    ]);
+
+    return json_encode(['status' => true, 'notification' => get_phrase('voucher_created_and_pdf_generated')]);
 }
 
-// Approbation avec document Site Manager
-public function exit_voucher_approve($voucher_id) {
-    $voucher = $this->db->get_where('exit_vouchers', ['id' => $voucher_id])->row_array();
-    $items   = $this->db->get_where('exit_voucher_items', ['voucher_id' => $voucher_id])->result_array();
 
-    // Déduction des stocks
+public function exit_voucher_approve($voucher_id) {
+    $approved_by = $this->session->userdata('user_id');
+    $approved_at = date('Y-m-d H:i:s');
+    
+    // 1. Mise à jour de l'approbateur
+    $this->db->where('id', $voucher_id);
+    $this->db->update('exit_vouchers', [
+        'status'      => 'approved',
+        'approved_by' => $approved_by,
+        'approved_at' => $approved_at
+    ]);
+
+    // 2. Déduction Stock (Identique)
+    $voucher = $this->db->get_where('exit_vouchers', ['id' => $voucher_id])->row_array();
+    $items = $this->db->get_where('exit_voucher_items', ['voucher_id' => $voucher_id])->result_array();
     foreach ($items as $item) {
         $this->db->where(['inventory_id' => $item['inventory_id'], 'site_id' => $voucher['site_id']]);
         $this->db->set('quantity', 'quantity - ' . $item['quantity'], FALSE);
         $this->db->update('stocks');
     }
 
-    // Upload du document Site Manager (Preuve de validation)
-    if (!empty($_FILES['approval_file']['name'])) {
-        $file_name = 'APP_' . $voucher_id . '_' . time() . '.' . pathinfo($_FILES['approval_file']['name'], PATHINFO_EXTENSION);
-        move_uploaded_file($_FILES['approval_file']['tmp_name'], 'uploads/vouchers/' . $file_name);
-        
-        $this->db->insert('exit_voucher_documents', [
-            'voucher_id'  => $voucher_id,
-            'file_name'   => $file_name,
-            'file_path'   => 'uploads/vouchers/' . $file_name,
-            'uploaded_by' => $this->session->userdata('user_id'),
-            'doc_type'    => 'approval_doc'
-        ]);
-    }
+    // 3. GÉNÉRATION DU PDF FINAL (Le template inclura maintenant la signature)
+    $this->db->select('exit_vouchers.*, p.name as project_name, s.name as site_name');
+    $this->db->from('exit_vouchers');
+    $this->db->join('projects p', 'p.id = exit_vouchers.project_id', 'left');
+    $this->db->join('sites s', 's.id = exit_vouchers.site_id');
+    $this->db->where('exit_vouchers.id', $voucher_id);
+    $pdf_data['v'] = $this->db->get()->row_array();
 
-    $this->db->where('id', $voucher_id);
-    $this->db->update('exit_vouchers', ['status' => 'approved']);
+    $pdf_data['items'] = $this->db->select('exit_voucher_items.*, i.name, i.sku, i.unit')
+                                  ->join('inventory i', 'i.id = exit_voucher_items.inventory_id')
+                                  ->get_where('exit_voucher_items', ['voucher_id' => $voucher_id])->result_array();
 
-    return json_encode(['status' => true, 'notification' => get_phrase('voucher_approved')]);
+    $html = $this->load->view('backend/storekeeper/exit_voucher/exit_voucher_pdf', $pdf_data, true);
+    $this->load->library('pdf');
+    $pdf_content = $this->pdf->generate($html, '', false);
+    
+    $file_name = 'BS_FINAL_' . $voucher_id . '.pdf';
+    $file_path = 'uploads/vouchers/' . $file_name;
+    file_put_contents($file_path, $pdf_content);
+
+    // 4. Enregistrement du PDF FINAL
+    $this->db->insert('exit_voucher_documents', [
+        'voucher_id'  => $voucher_id,
+        'file_name'   => $file_name,
+        'file_path'   => $file_path,
+        'uploaded_by' => $approved_by,
+        'doc_type'    => 'approval_doc'
+    ]);
+
+    return json_encode(['status' => true, 'notification' => get_phrase('approved_successfully')]);
 }
 public function manage_purchase_order($param1 = '', $param2 = '') {
     

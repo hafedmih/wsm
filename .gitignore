@@ -12,10 +12,10 @@ assets/uploads/
 /uploads/users/*
 /uploads/project_documents/
 /uploads/project_documents/*
-/uploads/vouchers/
-/uploads/vouchers/*
 /uploads/po/
 /uploads/po/*
+/uploads/vouchers/
+/uploads/vouchers/*
 application/cache/*
 !application/cache/index.html
 !application/cache/.htaccess

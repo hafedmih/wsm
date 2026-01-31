@@ -851,5 +851,15 @@
     "certified_version_with_all_signatures": "certified_version_with_all_signatures",
     "archived_on": "archived_on",
     "operational_attached_files": "operational_attached_files",
-    "uploaded_by": "uploaded_by"
+    "uploaded_by": "uploaded_by",
+    "voucher_created_and_pdf_generated": "voucher_created_and_pdf_generated",
+    "confirm_approval": "confirm_approval",
+    "you_are_about_to_approve_voucher": "you_are_about_to_approve_voucher",
+    "this_action_will_deduct_stock_immediately": "this_action_will_deduct_stock_immediately",
+    "will_be_affixed_to_the_final_document": "will_be_affixed_to_the_final_document",
+    "approve_now": "approve_now",
+    "voucher_approved_successfully": "voucher_approved_successfully",
+    "already_approved": "already_approved",
+    "voucher_approved_and_final_pdf_generated": "voucher_approved_and_final_pdf_generated",
+    "approved_successfully": "approved_successfully"
 }
