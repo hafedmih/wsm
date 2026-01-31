@@ -1,15 +1,13 @@
 <?php 
-    // Statistiques pour les tâches spécifiques du GM
+    // Calcul des statistiques pour la carte groupée
     $to_sign = $this->db->get_where('purchase_orders', ['status' => 3])->num_rows();
     $to_pay  = $this->db->get_where('purchase_orders', ['status' => 5])->num_rows();
-    
-    // NOUVEAU : Bons de sortie en attente d'approbation (Tous les sites pour le GM)
     $pending_vouchers = $this->db->get_where('exit_vouchers', ['status' => 'pending'])->num_rows();
     
     $total_tasks = $to_sign + $to_pay + $pending_vouchers;
 ?>
 
-<!-- SECTION 1 : STATISTIQUES GLOBALES & TÂCHES URGENTES -->
+<!-- SECTION 1 : STATISTIQUES GLOBALES -->
 <div class="row">
     <div class="col-12">
         <h4 class="page-title"><i class="mdi mdi-view-dashboard"></i> <?php echo get_phrase('manager_overview'); ?></h4>
@@ -18,12 +16,10 @@
 
 <div class="row">
     <!-- Statistique : Projets Actifs -->
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-4">
         <div class="card widget-flat bg-primary text-white">
             <div class="card-body">
-                <div class="float-end">
-                    <i class="mdi mdi-briefcase-check widget-icon"></i>
-                </div>
+                <div class="float-end"><i class="mdi mdi-briefcase-check widget-icon"></i></div>
                 <h5 class="fw-normal mt-0"><?php echo get_phrase('active_projects'); ?></h5>
                 <h3 class="mt-3 mb-1"><?php echo $total_projects; ?></h3>
             </div>
@@ -31,62 +27,28 @@
     </div>
 
     <!-- Statistique : Budget Total Ouvert -->
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-4">
         <div class="card widget-flat bg-success text-white">
             <div class="card-body">
-                <div class="float-end">
-                    <i class="mdi mdi-currency-usd widget-icon"></i>
-                </div>
+                <div class="float-end"><i class="mdi mdi-currency-usd widget-icon"></i></div>
                 <h5 class="fw-normal mt-0"><?php echo get_phrase('total_open_budget'); ?></h5>
                 <h3 class="mt-3 mb-1"><?php echo number_format($total_budget, 0); ?> <small>MRU</small></h3>
             </div>
         </div>
     </div>
 
-    <!-- Tâche : Signatures PO en attente -->
-    <div class="col-md-6 col-xl">
-        <div class="card widget-flat <?php echo ($to_sign > 0) ? 'bg-danger text-white' : 'bg-light'; ?>">
+    <!-- NOUVELLE CARTE GROUPÉE : MY TASKS -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card widget-flat <?php echo ($total_tasks > 0) ? 'bg-danger text-white' : 'bg-light'; ?>">
             <div class="card-body">
-                <div class="float-end">
-                    <i class="mdi mdi-pen widget-icon"></i>
-                </div>
-                <h5 class="fw-normal mt-0"><?php echo get_phrase('pos_to_sign'); ?></h5>
-                <h3 class="mt-3 mb-1"><?php echo $to_sign; ?></h3>
-                <?php if($to_sign > 0): ?>
-                    <a href="<?php echo site_url('gm/purchase_order?step=3'); ?>" class="text-white font-13 fw-bold"><?php echo get_phrase('view'); ?> <i class="mdi mdi-arrow-right"></i></a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tâche : Paiements PO en attente -->
-    <div class="col-md-6 col-xl">
-        <div class="card widget-flat <?php echo ($to_pay > 0) ? 'bg-warning text-white' : 'bg-light'; ?>">
-            <div class="card-body">
-                <div class="float-end">
-                    <i class="mdi mdi-cash-multiple widget-icon"></i>
-                </div>
-                <h5 class="fw-normal mt-0"><?php echo get_phrase('payments_to_make'); ?></h5>
-                <h3 class="mt-3 mb-1"><?php echo $to_pay; ?></h3>
-                <?php if($to_pay > 0): ?>
-                    <a href="<?php echo site_url('gm/purchase_order?step=5'); ?>" class="text-white font-13 fw-bold"><?php echo get_phrase('view'); ?> <i class="mdi mdi-arrow-right"></i></a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- NOUVEAU : Tâche : Bons de Sortie en attente -->
-    <div class="col-md-6 col-xl">
-        <div class="card widget-flat <?php echo ($pending_vouchers > 0) ? 'bg-info text-white' : 'bg-light'; ?>">
-            <div class="card-body">
-                <div class="float-end">
-                    <i class="mdi mdi-cart-arrow-down widget-icon"></i>
-                </div>
-                <h5 class="fw-normal mt-0"><?php echo get_phrase('vouchers_to_approve'); ?></h5>
-                <h3 class="mt-3 mb-1"><?php echo $pending_vouchers; ?></h3>
-                <?php if($pending_vouchers > 0): ?>
-                    <a href="<?php echo site_url('gm/exit_voucher/pending'); ?>" class="text-white font-13 fw-bold"><?php echo get_phrase('approve_now'); ?> <i class="mdi mdi-arrow-right"></i></a>
-                <?php endif; ?>
+                <div class="float-end"><i class="mdi mdi-bell-ring widget-icon"></i></div>
+                <h5 class="fw-normal mt-0 text-truncate"><?php echo get_phrase('my_pending_tasks'); ?></h5>
+                <h3 class="mt-3 mb-1"><?php echo $total_tasks; ?></h3>
+                <p class="mb-0">
+                    <a href="<?php echo site_url('gm/my_tasks'); ?>" class="<?php echo ($total_tasks > 0) ? 'text-white' : 'text-primary'; ?> font-13 fw-bold">
+                        <?php echo get_phrase('open_task_center'); ?> <i class="mdi mdi-arrow-right-circle"></i>
+                    </a>
+                </p>
             </div>
         </div>
     </div>

@@ -142,4 +142,15 @@ public function profile($param1 = "", $param2 = "")
 			$this->load->view('backend/index', $page_data);
 		}
 	}
+        public function my_tasks() {
+    // Re-calculer les comptes pour la vue spécifique
+    $page_data['to_sign'] = $this->db->get_where('purchase_orders', ['status' => 3])->num_rows();
+    $page_data['to_pay']  = $this->db->get_where('purchase_orders', ['status' => 5])->num_rows();
+    $page_data['pending_vouchers'] = $this->db->get_where('exit_vouchers', ['status' => 'pending'])->num_rows();
+
+    $page_data['page_title'] = get_phrase('my_task_center');
+    $page_data['folder_name'] = 'tasks';
+    $page_data['page_name'] = 'index';
+    $this->load->view('backend/index', $page_data);
+}
 }
